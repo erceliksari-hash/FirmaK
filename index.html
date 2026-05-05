@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v141.9</title>
+    <title>Üretim Takip Pro v142.0 - Cloud</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Firebase SDK'ları -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
         :root {
             --bg: #0d1117; --card: #161b22; --input: #21262d;
@@ -44,16 +48,14 @@
 <div class="container">
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tab1', this)">🏠 ÜRETİM</button>
-        <button class="tab-btn" onclick="switchTab('tab-kayit', this); renderDbList();">🏷️ REHBER</button>
+        <button class="tab-btn" onclick="switchTab('tab-kayit', this)">🏷️ REHBER</button>
         <button class="tab-btn" onclick="switchTab('tab-arsiv', this); renderArchive();">📜 ARŞİV</button>
     </div>
 
-    <!-- ÜRETİM SEKEMESİ -->
     <div id="tab1" class="tab-content active">
         <div class="card">
             <div id="readerUretim" class="scanner-container"></div>
             <button class="btn btn-scan" id="scanBtnUretim" onclick="toggleScanner('readerUretim', 'cArt', 'scanBtnUretim')">📷 AUFTRAG BARKODU TARA</button>
-            
             <div style="margin-bottom: 12px;"><label>Tarih</label><input type="date" id="targetDate"></div>
             <div class="grid-inputs">
                 <div style="grid-column: span 2;"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
@@ -90,83 +92,67 @@
         </div>
     </div>
 
-    <!-- REHBER SEKEMESİ -->
     <div id="tab-kayit" class="tab-content">
         <div class="card">
             <div id="readerRehber" class="scanner-container"></div>
             <button class="btn btn-scan" id="scanBtnRehber" onclick="toggleScanner('readerRehber', 'dbArt', 'scanBtnRehber')">📷 REHBER İÇİN BARKOD TARA</button>
-            
             <div class="grid-inputs" style="margin-top: 10px;">
                 <div><label>ARTİKEL</label><input type="text" id="dbArt"></div>
                 <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
             </div>
-            <button class="btn btn-add" onclick="saveDb()">KAYDET</button>
+            <button class="btn btn-add" onclick="saveDb()">BULUTA KAYDET</button>
             <div class="table-wrapper" style="margin-top:15px;"><table id="dbTable"><thead><tr><th>ARTİKEL</th><th>TE</th><th>SİL</th></tr></thead><tbody id="dbListBody"></tbody></table></div>
         </div>
     </div>
     
-    <!-- ARŞİV SEKEMESİ -->
     <div id="tab-arsiv" class="tab-content">
         <div id="archiveListContainer"></div>
     </div>
 </div>
 
 <script>
+    // --- FIREBASE YAPILANDIRMASI (Resimdeki Bilgiler) ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
+        authDomain: "firmak-c457f.firebaseapp.com",
+        databaseURL: "https://firmak-c457f-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "firmak-c457f",
+        storageBucket: "firmak-c457f.appspot.com",
+        messagingSenderId: "521525493127",
+        appId: "1:521525493127:web:e8a611de175ea9ea44a722"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const rehberRef = db.ref('rehber');
+
+    // Rehber Verilerini Dinle ve Çevrimdışı Çalışmayı Aktifleştir
+    db.ref('.info/connected').on('value', (snap) => {
+        if (snap.val() === true) console.log("Buluta Bağlandı");
+        else console.log("Bağlantı Yok - Çevrimdışı Mod");
+    });
+
+    // Bulut Rehberi Çek
+    let globalRehber = [];
+    rehberRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        globalRehber = [];
+        if(data) {
+            Object.keys(data).forEach(key => {
+                globalRehber.push({id: key, ...data[key]});
+            });
+        }
+        renderDbList();
+    });
+
     const STORAGE_KEY = 'PRO_V141_DATA';
-    const DB_KEY = 'PRO_V141_DB';
     let html5QrCode;
 
-    // --- Barkod Tarayıcı Fonksiyonu ---
-    function toggleScanner(readerId, targetInputId, btnId) {
-        const readerDiv = document.getElementById(readerId);
-        const btn = document.getElementById(btnId);
-        
-        if (readerDiv.style.display === 'none' || !readerDiv.style.display) {
-            readerDiv.style.display = 'block';
-            btn.innerText = "🛑 TARAMAYI KAPAT";
-            btn.style.borderColor = "var(--danger)";
-            btn.style.color = "var(--danger)";
-            
-            html5QrCode = new Html5Qrcode(readerId);
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: { width: 250, height: 150 } },
-                (decodedText) => {
-                    const cleanText = decodedText.trim().toUpperCase();
-                    document.getElementById(targetInputId).value = cleanText;
-                    if(targetInputId === 'cArt') { fetchTE(cleanText); }
-                    stopScanner(readerDiv, btn);
-                }
-            ).catch(err => {
-                alert("Kamera başlatılamadı.");
-                stopScanner(readerDiv, btn);
-            });
-        } else {
-            stopScanner(readerDiv, btn);
-        }
-    }
-
-    function stopScanner(div, btn) {
-        if(html5QrCode) {
-            html5QrCode.stop().then(() => {
-                div.style.display = 'none';
-                btn.innerText = (btn.id === 'scanBtnUretim') ? "📷 AUFTRAG BARKODU TARA" : "📷 REHBER İÇİN BARKOD TARA";
-                btn.style.borderColor = "var(--accent)";
-                btn.style.color = "var(--accent)";
-            }).catch(() => {
-                div.style.display = 'none';
-            });
-        }
-    }
-
-    // --- Hesaplama Motoru ---
     function engine() {
         const a = parseFloat(document.getElementById('cAdet').value) || 0;
         const t = parseFloat(document.getElementById('cTE').value) || 0;
-        // Eğer boşsa 1.0 kabul et
         const vInput = document.getElementById('cPro').value;
         const v = (vInput === "" || parseFloat(vInput) === 0) ? 1.0 : parseFloat(vInput);
-        
         const result = (a * t) / v;
         document.getElementById('cRes').value = result.toFixed(2).replace('.', ',');
     }
@@ -174,8 +160,6 @@
     function addRow() {
         const art = document.getElementById('cArt').value.toUpperCase();
         if(!art) return alert("Auftrag girin!");
-        
-        // Boşsa 1.0 olarak kaydedilir
         const vInput = document.getElementById('cPro').value;
         const vSave = (vInput === "" || parseFloat(vInput) === 0) ? "1.0" : vInput;
 
@@ -197,6 +181,61 @@
         ['cArt','cAdet','cTE','cRes','cRust','cGMK', 'cPro'].forEach(id => document.getElementById(id).value = "");
     }
 
+    function saveDb() {
+        const art = document.getElementById('dbArt').value.toUpperCase().trim();
+        const te = document.getElementById('dbTE').value;
+        if(!art || !te) return alert("Bilgileri doldurun!");
+        
+        rehberRef.push({art, te}).then(() => {
+            document.getElementById('dbArt').value="";
+            document.getElementById('dbTE').value="";
+        }).catch(err => alert("Hata: " + err.message));
+    }
+
+    function deleteDb(id) {
+        if(confirm("Bu parça buluttan silinsin mi?")) {
+            db.ref('rehber/' + id).remove();
+        }
+    }
+
+    function renderDbList() {
+        document.getElementById('dbListBody').innerHTML = globalRehber.map((i) => `
+            <tr>
+                <td>${i.art}</td>
+                <td>${i.te}</td>
+                <td><button onclick="deleteDb('${i.id}')" style="background:none; border:none;">🗑️</button></td>
+            </tr>`).join('');
+    }
+
+    function fetchTE(v) {
+        const match = globalRehber.find(x => x.art === v.toUpperCase().trim());
+        if(match) { 
+            document.getElementById('cTE').value = match.te; 
+            engine(); 
+        }
+    }
+
+    // --- Diğer Standart Fonksiyonlar (Aynen Korundu) ---
+    function toggleScanner(readerId, targetInputId, btnId) {
+        const readerDiv = document.getElementById(readerId);
+        const btn = document.getElementById(btnId);
+        if (readerDiv.style.display === 'none' || !readerDiv.style.display) {
+            readerDiv.style.display = 'block'; btn.innerText = "🛑 TARAMAYI KAPAT";
+            html5QrCode = new Html5Qrcode(readerId);
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
+                const cleanText = decodedText.trim().toUpperCase();
+                document.getElementById(targetInputId).value = cleanText;
+                if(targetInputId === 'cArt') fetchTE(cleanText);
+                stopScanner(readerDiv, btn);
+            });
+        } else { stopScanner(readerDiv, btn); }
+    }
+    function stopScanner(div, btn) {
+        if(html5QrCode) html5QrCode.stop().then(() => {
+            div.style.display = 'none';
+            btn.innerText = (btn.id === 'scanBtnUretim') ? "📷 AUFTRAG BARKODU TARA" : "📷 REHBER İÇİN BARKOD TARA";
+        });
+    }
     function calcSum() {
         let total = 0, r = 0, g = 0;
         document.querySelectorAll("#dailyBody tr").forEach(tr => {
@@ -207,46 +246,18 @@
         document.getElementById('sumRust').innerText = r;
         document.getElementById('sumGMK').innerText = g;
     }
-
     function finishDay() {
         const rows = document.querySelectorAll("#dailyBody tr");
         if(rows.length === 0) return alert("Liste boş!");
-        const dateInput = document.getElementById('targetDate').value;
-        const [y, m, d] = dateInput.split("-");
+        const [y, m, d] = document.getElementById('targetDate').value.split("-");
         const formattedDate = `${d}.${m}.${y}`;
         const dayRecord = { date: formattedDate, items: Array.from(rows).map(r => JSON.parse(r.dataset.info)) };
         let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         arc.unshift(dayRecord);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
         document.getElementById('dailyBody').innerHTML = "";
-        calcSum();
-        alert("Gün arşivlendi!");
-        renderArchive();
+        calcSum(); alert("Gün arşivlendi!"); renderArchive();
     }
-
-    function exportBackup() {
-        const data = { arsiv: JSON.parse(localStorage.getItem(STORAGE_KEY)) || [], rehber: JSON.parse(localStorage.getItem(DB_KEY)) || [] };
-        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Yedek_${new Date().toLocaleDateString()}.json`;
-        a.click();
-    }
-
-    function importBackup(input) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = JSON.parse(e.target.result);
-            if(confirm("Üzerine yazılsın mı?")) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.arsiv));
-                localStorage.setItem(DB_KEY, JSON.stringify(data.rehber));
-                location.reload();
-            }
-        };
-        reader.readAsText(input.files[0]);
-    }
-
     function renderArchive() {
         const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         const container = document.getElementById('archiveListContainer');
@@ -260,19 +271,29 @@
                 </div>
             </div>`).join('') || '<div class="card">Arşiv henüz boş.</div>';
     }
-
     function deleteArchive(idx) { if(confirm("Silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx, 1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
-    function saveDb() { const art = document.getElementById('dbArt').value.toUpperCase(); const te = document.getElementById('dbTE').value; if(!art || !te) return; let db = JSON.parse(localStorage.getItem(DB_KEY)) || []; db.push({art, te}); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderDbList(); document.getElementById('dbArt').value=""; document.getElementById('dbTE').value=""; }
-    function renderDbList() { const db = JSON.parse(localStorage.getItem(DB_KEY)) || []; document.getElementById('dbListBody').innerHTML = db.map((i, idx) => `<tr><td>${i.art}</td><td>${i.te}</td><td><button onclick="deleteDb(${idx})" style="background:none; border:none;">🗑️</button></td></tr>`).join(''); }
-    function deleteDb(idx) { let db = JSON.parse(localStorage.getItem(DB_KEY)); db.splice(idx, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderDbList(); }
-    function fetchTE(v) { const db = JSON.parse(localStorage.getItem(DB_KEY)) || []; const match = db.find(x => x.art === v.toUpperCase().trim()); if(match) { document.getElementById('cTE').value = match.te; engine(); } }
-    function switchTab(id, btn) { 
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); 
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
-        document.getElementById(id).classList.add('active'); 
-        btn.classList.add('active'); 
+    function exportBackup() {
+        const data = { arsiv: JSON.parse(localStorage.getItem(STORAGE_KEY)) || [], rehber_yedek: globalRehber };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `Yedek_${new Date().toLocaleDateString()}.json`; a.click();
     }
-
+    function importBackup(input) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = JSON.parse(e.target.result);
+            if(confirm("Arşiv üzerine yazılsın mı?")) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.arsiv));
+                location.reload();
+            }
+        };
+        reader.readAsText(input.files[0]);
+    }
+    function switchTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); btn.classList.add('active');
+    }
     window.onload = () => {
         document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
         renderArchive();
