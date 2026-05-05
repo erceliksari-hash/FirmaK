@@ -3,94 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FirmaK Üretim Takip v139</title>
-    <!-- Senin mevcut CSS tasarımın aynen korunmuştur -->
+    <title>FirmaK Üretim Takip</title>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --primary: #38bdf8; --danger: #ef4444; }
-        body { background: var(--bg); color: var(--text); font-family: system-ui; margin: 0; padding: 10px; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 6px -1px #000000; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 16px; }
-        .btn { width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        .btn-primary { background: var(--primary); color: #000; }
-        .tab-btn { padding: 10px 20px; background: #334155; color: white; border: none; border-radius: 5px; margin-right: 5px; }
-        .active-tab { background: var(--primary); color: #000; }
+        /* Görsel 50_2.jpg'deki orijinal tasarım renkleri ve düzeni */
+        body { background-color: #0d1117; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; padding: 20px; }
+        .card { background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
+        input { width: 100%; background-color: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; padding: 5px 12px; margin-bottom: 10px; box-sizing: border-box; }
+        .btn { background-color: #238636; color: white; border: 1px solid rgba(240,246,252,0.1); border-radius: 6px; padding: 5px 16px; cursor: pointer; width: 100%; }
+        .btn-danger { background-color: #da3633; }
+        .tab-content { display: block; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div style="margin-bottom: 15px;">
-        <button onclick="showTab('tab-giris')" id="btn-giris" class="tab-btn active-tab">VERİ GİRİŞİ</button>
-        <button onclick="showTab('tab-arsiv')" id="btn-arsiv" class="tab-btn">ARŞİV</button>
-        <button onclick="showTab('tab-ayarlar')" id="btn-ayarlar" class="tab-btn">⚙️</button>
-    </div>
-
-    <!-- VERİ GİRİŞİ -->
     <div id="tab-giris" class="tab-content">
         <div class="card">
             <input type="text" id="cArt" placeholder="ARTİKEL / MODEL" oninput="engine()">
             <input type="text" id="cNote" placeholder="NOT / AÇIKLAMA">
             <input type="number" id="cAdet" placeholder="ADET" oninput="engine()">
             <input type="text" id="cTE" placeholder="T.E. (Örn: 1,25)" oninput="engine()">
-            <input type="text" id="cPro" placeholder="PRO / ÇARPAN (Varsayılan: 1)" oninput="engine()">
-            <input type="text" id="cRes" placeholder="TOPLAM SONUÇ" readonly style="background:#334155; font-weight:bold;">
-            <button class="btn btn-primary" onclick="addRow()">LİSTEYE EKLE & GOOGLE'A GÖNDER</button>
+            <input type="text" id="cPro" placeholder="PRO / ÇARPAN" oninput="engine()">
+            <input type="text" id="cRes" placeholder="TOPLAM SONUÇ" readonly>
+            <button class="btn" onclick="addRow()">LİSTEYE EKLE</button>
         </div>
     </div>
 
-    <!-- ARŞİV -->
-    <div id="tab-arsiv" class="tab-content hidden">
-        <div class="card" id="archiveListContainer">
-            Henüz veri yok.
-        </div>
+    <div id="tab-arsiv" class="tab-content">
+        <div class="card" id="archiveListContainer"></div>
     </div>
 
-    <!-- AYARLAR -->
-    <div id="tab-ayarlar" class="tab-content hidden">
+    <div id="tab-ayarlar" class="tab-content">
         <div class="card">
-            <button class="btn" style="background:var(--danger);" onclick="resetEverything()">⚠️ TÜM VERİLERİ SİL</button>
+            <button class="btn btn-danger" onclick="resetEverything()">TÜM VERİLERİ SİL</button>
         </div>
     </div>
 
     <script>
-        // --- KRİTİK AYAR: LİNKİNİ BURAYA YAPIŞTIR ---
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztva0Apn_KHb_Siu7YCA3fRuM9BeYl2dAmUNi5qOOId2Bse1v_6LPqwnhanxFb9nDP7w/exec";
+        // BURAYA GOOGLE LİNKİNİ YAPIŞTIR
+        const SCRIPT_URL = "BURAYA_GOOGLE_LİNKİNİ_KOY";
 
         const STORAGE_KEY = 'v139_history';
 
-        // 1. Google Sheets'e Veri Gönderme Fonksiyonu
-        function sendToGoogle(data) {
-            if (SCRIPT_URL.includes("BURAYA_GOOGLE")) {
-                console.log("Google linki henüz eklenmemiş.");
-                return;
+        function engine() {
+            const a = parseBox('cAdet'), t = parseBox('cTE');
+            const v = parseBox('cPro') || 1;
+            if (a !== null && t !== null) {
+                document.getElementById('cRes').value = ((a * t) / v).toFixed(2).replace('.', ',');
             }
-            
+        }
+
+        function parseBox(id) {
+            let val = document.getElementById(id).value.toString().replace(',', '.');
+            return val === "" ? null : parseFloat(val);
+        }
+
+        function sendToGoogle(data) {
+            if(SCRIPT_URL.includes("BURAYA")) return;
             fetch(SCRIPT_URL, {
                 method: "POST",
                 mode: "no-cors",
                 cache: "no-cache",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data)
-            }).catch(err => console.error("Google Hatası:", err));
+            });
         }
 
-        // 2. Matematiksel Hesaplama (Senin Orijinal Motorun)
-        function formatStrict(num) { return (num === 0 || isNaN(num)) ? "0,00" : parseFloat(num).toFixed(2).replace('.', ','); }
-        function parseBox(id) { 
-            let val = document.getElementById(id).value.toString().replace(',', '.'); 
-            return val === "" ? null : parseFloat(val); 
-        }
-
-        function engine() {
-            const a = parseBox('cAdet'), t = parseBox('cTE');
-            const v = parseBox('cPro') || 1;
-            if (a !== null && t !== null) {
-                let sonuc = (a * t) / v;
-                document.getElementById('cRes').value = sonuc.toFixed(2).replace('.', ',');
-            }
-        }
-
-        // 3. Veri Ekleme (Hem Yerel Hem Google)
         function addRow() {
             const rowData = {
                 tarih: new Date().toLocaleString('tr-TR'),
@@ -101,51 +79,28 @@
                 res: document.getElementById('cRes').value || "0,00"
             };
 
-            // Yerel Hafızaya Kaydet
+            // Yerel kayıt
             let history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             history.unshift(rowData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
 
-            // Google Sheets'e Gönder
+            // Google Sheets'e gönder
             sendToGoogle(rowData);
 
-            // Arayüzü Güncelle ve Temizle
-            alert("Veri başarıyla kaydedildi ve Google Sheets'e gönderildi.");
-            document.getElementById('cAdet').value = "";
-            document.getElementById('cRes').value = "";
             renderArchive();
+            alert("Kaydedildi!");
         }
 
-        // 4. Arşiv ve Sekme Yönetimi
         function renderArchive() {
             const history = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             const container = document.getElementById('archiveListContainer');
-            if (history.length === 0) { container.innerHTML = "Arşiv boş."; return; }
-            
-            container.innerHTML = history.map(item => `
-                <div style="border-bottom:1px solid #334155; padding:10px 0; font-size:14px;">
-                    <strong>${item.tarih}</strong> - ${item.art}<br>
-                    ${item.adet} Adet | Sonuç: ${item.res}
-                </div>
-            `).join('');
-        }
-
-        function showTab(id) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            document.getElementById(id).classList.remove('hidden');
-            document.getElementById('btn-' + id.split('-')[1]).classList.add('active-tab');
-            if(id === 'tab-arsiv') renderArchive();
+            container.innerHTML = history.map(item => `<div>${item.tarih} - ${item.art} - ${item.res}</div>`).join('<hr>');
         }
 
         function resetEverything() {
-            if(confirm("TÜM veriler silinecek! Emin misiniz?")) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload();
-            }
+            if(confirm("Emin misiniz?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); }
         }
 
-        // Sayfa açıldığında arşivi hazırla
         renderArchive();
     </script>
 </body>
