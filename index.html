@@ -106,17 +106,13 @@
 </div>
 
 <script>
-    // --- BURAYA GOOGLE SCRIPT LINKINI YAPIŞTIR ---
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztva0Apn_KHb_Siu7YCA3fRuM9BeYl2dAmUNi5qOOId2Bse1v_6LPqwnhanxFb9nDP7w/exec"; 
-
     const STORAGE_KEY = 'v139_history'; 
     const DB_KEY = 'v139_db';
     let scanner = null;
 
-    // Google'a veri gönderen fonksiyon
     function sendToCloud(data) {
         if (!SCRIPT_URL || SCRIPT_URL.includes("BURAYA_LINKINI")) return;
-        
         fetch(SCRIPT_URL, {
             method: "POST",
             mode: "no-cors",
@@ -151,7 +147,6 @@
             gmk: parseBox('cGMK') || 0
         };
 
-        // Veriyi listeye eklemeden önce Cloud'a gönder (Arka planda)
         sendToCloud(rowData);
 
         const tr = document.createElement('tr');
@@ -191,23 +186,62 @@
         netResEl.style.color = diff <= 0 ? "var(--success)" : "var(--danger)";
     }
 
-    function toggleDetails(id) {
-        const el = document.getElementById(id);
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    function finishDay() {
+        try {
+            let rows = Array.from(document.querySelectorAll("#dailyBody tr"));
+            if (rows.length === 0) {
+                alert("Arşivlenecek veri bulunamadı!");
+                return;
+            }
+            let selectedDate = document.getElementById('targetDate').value || new Date().toLocaleDateString('tr-TR');
+            let stored = localStorage.getItem(STORAGE_KEY);
+            let arc = stored ? JSON.parse(stored) : [];
+
+            let newDay = {
+                date: selectedDate,
+                items: rows.map(r => JSON.parse(r.dataset.info))
+            };
+
+            arc.unshift(newDay);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+
+            document.getElementById('dailyBody').innerHTML = ""; 
+            calcSum(); 
+            renderArchive();
+            alert("Günü Bitir: Veriler başarıyla arşivlendi.");
+        } catch (e) {
+            alert("Hata: " + e.message);
+        }
     }
 
     function renderArchive() {
         let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         const container = document.getElementById('archiveListContainer');
-        if (arc.length === 0) { container.innerHTML = "Kayıt yok."; return; }
+        if (arc.length === 0) { container.innerHTML = "Arşiv boş."; return; }
         container.innerHTML = arc.map((day, idx) => {
-            let totalDk = day.items.reduce((sum, i) => sum + (i.res || 0) + (i.rust || 0) + (i.gmk || 0), 0);
-            return `<div class="archive-item"><div class="archive-header"><div style="flex-grow:1" onclick="toggleDetails('det-${idx}')"><b>📅 ${day.date}</b> | Toplam: ${formatStrict(totalDk)}</div><button class="btn-del-day" onclick="deleteArchiveDay(${idx})">SİL</button></div><div id="det-${idx}" class="details-table table-wrapper"><table><thead><tr><th>AUFTRAG</th><th>ADET</th><th>DK</th><th>R</th><th>G</th></tr></thead><tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${formatStrict(i.res)}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody></table></div></div>`;
+            let totalDk = day.items.reduce((sum, i) => sum + (parseFloat(i.res)||0) + (parseFloat(i.rust)||0) + (parseFloat(i.gmk)||0), 0);
+            return `<div class="archive-item">
+                <div class="archive-header">
+                    <div style="flex-grow:1" onclick="toggleDetails('det-${idx}')"><b>📅 ${day.date}</b> | Toplam: ${formatStrict(totalDk)} DK</div>
+                    <button class="btn-del-day" onclick="deleteArchiveDay(${idx})">SİL</button>
+                </div>
+                <div id="det-${idx}" class="details-table table-wrapper">
+                    <table>
+                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>DK</th><th>R</th><th>G</th></tr></thead>
+                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${formatStrict(i.res)}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>
+            </div>`;
         }).join('');
     }
 
+    function toggleDetails(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
+    }
+
     function deleteArchiveDay(idx) {
-        if(confirm("Silinsin mi?")) {
+        if(confirm("Bu günü silmek istediğinize emin misiniz?")) {
             let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             arc.splice(idx, 1);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
@@ -224,23 +258,13 @@
             await scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
                 document.getElementById('cArt').value = text; fetchTE(text); toggleScanner();
             });
-        } catch (e) { alert("Kamera hatası. İzinleri kontrol edin."); toggleScanner(); }
+        } catch (e) { alert("Kamera hatası!"); toggleScanner(); }
     }
 
     function fetchTE(v) {
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let m = db.find(x => x.art === v.toUpperCase().trim());
         if (m) { document.getElementById('cTE').value = m.te; document.getElementById('cNote').value = m.note || ""; engine(); }
-    }
-
-    function finishDay() {
-        let rows = Array.from(document.querySelectorAll("#dailyBody tr"));
-        if(!rows.length) return;
-        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        arc.unshift({ date: document.getElementById('targetDate').value, items: rows.map(r => JSON.parse(r.dataset.info)) });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
-        document.getElementById('dailyBody').innerHTML = ""; calcSum(); renderArchive();
-        alert("Gün sonu kaydedildi.");
     }
 
     function saveDb() {
@@ -263,7 +287,7 @@
         document.getElementById(id).classList.add('active'); btn.classList.add('active');
     }
 
-    function resetEverything() { if(confirm("Her şey silinecek! Emin misiniz?")) { localStorage.clear(); location.reload(); } }
+    function resetEverything() { if(confirm("TÜM VERİLER SİLİNECEK! Emin misiniz?")) { localStorage.clear(); location.reload(); } }
     
     window.onload = () => { 
         document.getElementById('targetDate').value = new Date().toISOString().split('T')[0]; 
