@@ -3,40 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v140.9 + Cloud</title>
+    <title>Üretim Takip Pro v141.1</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         :root {
             --bg: #0d1117; --card: #161b22; --input: #21262d;
             --accent: #58a6ff; --success: #238636; --danger: #f85149; --text: #c9d1d9; --purple: #8957e5;
+            --border: #30363d;
         }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1200px; }
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid #30363d; overflow-x: auto; scrollbar-width: none; }
-        .tab-btn { padding: 10px 15px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; }
+        
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tab-btn { padding: 12px 18px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; transition: 0.2s; }
         .tab-btn.active { background: var(--accent); color: white; }
-        .tab-content { display: none; }
+        
+        .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
-        .card { background: var(--card); border: 1px solid #30363d; padding: 12px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        label { display: block; font-size: 10px; color: #8b949e; margin-bottom: 4px; text-transform: uppercase; font-weight: bold; }
-        input { width: 100%; background: var(--input); border: 1px solid #30363d; padding: 10px; color: white; border-radius: 6px; outline: none; box-sizing: border-box; font-size: 13px; }
-        .btn { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; text-align: center; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        
+        .grid-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input { width: 100%; background: var(--input); border: 1px solid var(--border); padding: 12px; color: white; border-radius: 8px; outline: none; box-sizing: border-box; font-size: 14px; }
+
+        .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; text-align: center; font-size: 14px; }
         .btn-add { background: var(--accent); color: white; margin-top: 10px; }
-        .btn-scan { background: #30363d; color: white; margin-bottom: 10px; border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn-finish { background: var(--purple); color: white; margin-top: 10px; }
-        .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #30363d; margin-top: 5px; }
-        table { width: 100%; border-collapse: collapse; min-width: 650px; }
-        th { background: #21262d; padding: 8px; text-align: left; font-size: 10px; color: #8b949e; text-transform: uppercase; }
-        td { padding: 8px; border-bottom: 1px solid #30363d; font-size: 12px; }
+        .btn-scan { background: transparent; color: var(--accent); border: 1px solid var(--accent); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-finish { background: var(--purple); color: white; margin-top: 15px; font-size: 16px; }
+        
+        .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--card); margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #21262d; padding: 10px 8px; text-align: left; font-size: 11px; color: #8b949e; text-transform: uppercase; }
+        td { padding: 10px 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
         .total-row { background: #1c2128; font-weight: bold; color: var(--accent); }
-        #reader { width: 100%; border-radius: 8px; overflow: hidden; display: none; margin-bottom: 15px; border: 2px solid var(--accent); background: #000; }
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .mini-badge { padding: 8px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; text-align: center; }
-        .archive-item { border-left: 3px solid var(--accent); margin-bottom: 8px; padding: 10px; background: var(--input); border-radius: 6px; }
-        .archive-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-        .btn-del-day { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
-        .details-table { margin-top: 10px; background: #0d1117; display: none; padding: 5px; border-radius: 4px; }
+        
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+        .mini-badge { padding: 12px; background: #0d1117; border-radius: 10px; border: 1px solid var(--border); text-align: center; }
+        
+        #reader { width: 100%; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; border: 2px solid var(--accent); }
+
+        /* Arşiv Özel Stilleri */
+        .archive-day-card { border: 1px solid var(--border); background: var(--card); border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+        .archive-day-header { background: #1c2128; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        .archive-day-title { font-weight: bold; color: var(--accent); font-size: 16px; }
+        .btn-del-day { background: var(--danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -44,25 +56,25 @@
 <div class="container">
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tab1', this)">🏠 ÜRETİM</button>
-        <button class="tab-btn" onclick="switchTab('tab-kayit', this); renderDbList();">🏷️ ARTIKEL</button>
+        <button class="tab-btn" onclick="switchTab('tab-kayit', this); renderDbList();">🏷️ REHBER</button>
         <button class="tab-btn" onclick="switchTab('tab-arsiv', this); renderArchive();">📜 ARŞİV</button>
         <button class="tab-btn" onclick="switchTab('tab-ayarlar', this)">⚙️ AYARLAR</button>
     </div>
 
     <div id="tab1" class="tab-content active">
         <div class="card">
-            <div style="margin-bottom: 10px;"><label>Tarih</label><input type="date" id="targetDate"></div>
+            <div style="margin-bottom: 12px;"><label>Üretim Tarihi</label><input type="date" id="targetDate"></div>
             <div id="reader"></div>
-            <button class="btn btn-scan" id="scanBtn" onclick="toggleScanner()">📷 BARKOD TARA (AUFTRAG)</button>
+            <button class="btn btn-scan" onclick="toggleScanner()">📷 BARKOD TARA</button>
 
             <div class="grid-inputs">
-                <div style="grid-column: span 2;"><label>Auftrag No</label><input type="text" id="cArt" oninput="fetchTE(this.value)" placeholder="Barkod veya No..."></div>
-                <div><label>Adet</label><input type="text" id="cAdet" oninput="engine()"></div>
-                <div><label>TE</label><input type="text" id="cTE" oninput="engine()"></div>
-                <div><label>Verim</label><input type="text" id="cPro" oninput="engine()" placeholder=""></div>
-                <div><label>Dakika</label><input type="text" id="cRes"></div>
-                <div><label>Rüst</label><input type="number" id="cRust"></div>
-                <div><label>GMK (T53)</label><input type="number" id="cGMK"></div>
+                <div style="grid-column: span 2;"><label>Auftrag / Artikel No</label><input type="text" id="cArt" oninput="fetchTE(this.value)" placeholder="No girin..."></div>
+                <div><label>Adet</label><input type="number" id="cAdet" oninput="engine()" inputmode="numeric"></div>
+                <div><label>TE</label><input type="number" id="cTE" oninput="engine()" step="0.001" inputmode="decimal"></div>
+                <div><label>Verim</label><input type="number" id="cPro" oninput="engine()" placeholder="1.0"></div>
+                <div><label>Net Dakika</label><input type="text" id="cRes" readonly style="color: var(--accent); font-weight: bold;"></div>
+                <div><label>Rüst</label><input type="number" id="cRust" oninput="calcSum()"></div>
+                <div><label>GMK</label><input type="number" id="cGMK" oninput="calcSum()"></div>
                 <input type="hidden" id="cNote">
             </div>
             <button class="btn btn-add" onclick="addRow()">LİSTEYE EKLE</button>
@@ -71,16 +83,12 @@
         <div class="card">
             <div class="table-wrapper">
                 <table>
-                    <thead><tr><th>AUFTRAG</th><th>NOT</th><th>ADET</th><th>TE</th><th>VER</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead>
+                    <thead><tr><th>AUFTRAG</th><th>NOT</th><th>ADET</th><th>TE</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead>
                     <tbody id="dailyBody"></tbody>
                     <tfoot>
-                        <tr class="total-row"><td colspan="5" style="text-align: right;">TOPLAM:</td><td id="sumRes">0,00</td><td id="sumRust">0</td><td id="sumGMK">0</td><td></td></tr>
+                        <tr class="total-row"><td colspan="4" style="text-align: right;">TOPLAM:</td><td id="sumRes">0,00</td><td id="sumRust">0</td><td id="sumGMK">0</td><td></td></tr>
                     </tfoot>
                 </table>
-            </div>
-            <div class="summary-grid">
-                <div class="mini-badge"><label>HEDEF</label><input type="number" id="customTarget" value="465" oninput="calcSum()" style="background:transparent; border:none; color:white; text-align:center; padding:0; width:100%; font-size:16px; font-weight:bold; outline:none;"></div>
-                <div class="mini-badge" style="border-color: var(--success);"><label style="color:var(--success)">FARK</label><div id="netResult" style="color:var(--success); font-size:16px; font-weight:bold;">0,00</div></div>
             </div>
             <button class="btn btn-finish" onclick="finishDay()">GÜNÜ BİTİR VE ARŞİVLE</button>
         </div>
@@ -89,159 +97,161 @@
     <div id="tab-kayit" class="tab-content">
         <div class="card">
             <div class="grid-inputs">
-                <div><label>ARTİKEL</label><input type="text" id="dbArt"></div>
-                <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
-                <div style="grid-column: span 2;"><label>Not</label><input type="text" id="dbNote"></div>
+                <div style="grid-column: span 2;"><label>ARTİKEL NO</label><input type="text" id="dbArt"></div>
+                <div><label>TE DEĞERİ</label><input type="number" id="dbTE" step="0.001"></div>
+                <div><label>NOT</label><input type="text" id="dbNote"></div>
             </div>
-            <button class="btn btn-add" style="background:var(--success);" onclick="saveDb()">REHBERE KAYDET</button>
-            <div class="table-wrapper"><table style="margin-top:10px;"><thead><tr><th>ARTİKEL</th><th>TE</th><th>SİL</th></tr></thead><tbody id="dbListBody"></tbody></table></div>
+            <button class="btn btn-add" style="background:var(--success);" onclick="saveDb()">REHBERE EKLE</button>
+            <div class="table-wrapper" style="margin-top:20px;"><table><thead><tr><th>ARTİKEL</th><th>TE</th><th>SİL</th></tr></thead><tbody id="dbListBody"></tbody></table></div>
         </div>
     </div>
     
     <div id="tab-arsiv" class="tab-content">
-        <div class="card" id="archiveListContainer"></div>
+        <div id="archiveListContainer"></div>
     </div>
 
-    <div id="tab-ayarlar" class="tab-content"><div class="card"><button class="btn" style="background:var(--danger);" onclick="resetEverything()">⚠️ TÜM VERİLERİ SİL</button></div></div>
+    <div id="tab-ayarlar" class="tab-content">
+        <div class="card">
+            <button class="btn" style="background:var(--danger);" onclick="resetEverything()">⚠️ TÜM VERİLERİ SIFIRLA</button>
+        </div>
+    </div>
 </div>
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbztva0Apn_KHb_Siu7YCA3fRuM9BeYl2dAmUNi5qOOId2Bse1v_6LPqwnhanxFb9nDP7w/exec"; 
-    const STORAGE_KEY = 'v139_history'; 
-    const DB_KEY = 'v139_db';
+    const STORAGE_KEY = 'v141_history'; 
+    const DB_KEY = 'v141_db';
     let scanner = null;
 
-    function sendToCloud(data) {
-        if (!SCRIPT_URL || SCRIPT_URL.includes("BURAYA_LINKINI")) return;
-        fetch(SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            cache: "no-cache",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }).catch(err => console.log("Bulut Hatası:", err));
+    // Tarihi GG.AA.YYYY formatına çeviren yardımcı fonksiyon
+    function formatDateDisplay(dateStr) {
+        if(!dateStr) return "-";
+        const [year, month, day] = dateStr.split("-");
+        return `${day}.${month}.${year}`;
     }
 
-    function formatStrict(num) { return (num === 0 || isNaN(num)) ? "0,00" : parseFloat(num).toFixed(2).replace('.', ','); }
-    function parseBox(id) { let val = document.getElementById(id).value.toString().replace(',', '.'); return val === "" ? null : parseFloat(val); }
-
     function engine() {
-        const a = parseBox('cAdet'), t = parseBox('cTE');
-        const v = parseBox('cPro') || 1; 
-        if (a !== null && t !== null) {
+        const a = parseFloat(document.getElementById('cAdet').value) || 0;
+        const t = parseFloat(document.getElementById('cTE').value) || 0;
+        const v = parseFloat(document.getElementById('cPro').value) || 1;
+        if (a > 0 && t > 0) {
             document.getElementById('cRes').value = ((a * t) / v).toFixed(2).replace('.', ',');
         }
     }
 
     function addRow() {
-        const proInput = document.getElementById('cPro').value;
         const rowData = {
-            tarih: document.getElementById('targetDate').value,
-            art: document.getElementById('cArt').value.toUpperCase() || '-',
+            art: document.getElementById('cArt').value.toUpperCase(),
             note: document.getElementById('cNote').value || '-',
             adet: document.getElementById('cAdet').value || 0,
             te: document.getElementById('cTE').value || 0,
-            pro: proInput || "",
-            res: parseBox('cRes') || 0,
-            rust: parseBox('cRust') || 0,
-            gmk: parseBox('cGMK') || 0
+            pro: document.getElementById('cPro').value || 1,
+            res: document.getElementById('cRes').value.replace(',', '.') || 0,
+            rust: document.getElementById('cRust').value || 0,
+            gmk: document.getElementById('cGMK').value || 0,
+            id: Date.now()
         };
-
-        sendToCloud(rowData);
-
-        const tr = document.createElement('tr');
-        tr.dataset.info = JSON.stringify(rowData);
+        if(!rowData.art) return alert("Hata: Auftrag no boş olamaz.");
         
-        tr.innerHTML = `
-            <td>${rowData.art}</td>
-            <td style="font-size:10px;">${rowData.note}</td>
-            <td>${rowData.adet}</td>
-            <td>${rowData.te}</td>
-            <td>${rowData.pro === "" ? "-" : rowData.pro}</td> 
-            <td style="color:var(--accent); font-weight:bold;">${formatStrict(rowData.res)}</td>
-            <td>${rowData.rust || '-'}</td>
-            <td>${rowData.gmk || '-'}</td>
-            <td><button onclick="this.closest('tr').remove(); calcSum();" style="border:none; background:none; color:var(--danger);">❌</button></td>`;
-            
-        document.getElementById('dailyBody').appendChild(tr);
-        ['cArt','cAdet','cTE','cRes','cRust','cGMK','cNote','cPro'].forEach(i => document.getElementById(i).value = "");
+        renderDailyRow(rowData);
         calcSum();
+        ['cArt','cAdet','cTE','cRes','cRust','cGMK','cNote','cPro'].forEach(id => document.getElementById(id).value = "");
+    }
+
+    function renderDailyRow(data) {
+        const tr = document.createElement('tr');
+        tr.id = `row-${data.id}`;
+        tr.dataset.info = JSON.stringify(data);
+        tr.innerHTML = `
+            <td>${data.art}</td>
+            <td style="color:#8b949e; font-size:11px;">${data.note}</td>
+            <td>${data.adet}</td>
+            <td>${data.te}</td>
+            <td style="color:var(--accent); font-weight:bold;">${data.res.toString().replace('.', ',')}</td>
+            <td>${data.rust}</td>
+            <td>${data.gmk}</td>
+            <td><button onclick="document.getElementById('row-${data.id}').remove(); calcSum();" style="background:none; border:none; color:var(--danger);">❌</button></td>
+        `;
+        document.getElementById('dailyBody').appendChild(tr);
     }
 
     function calcSum() {
-        let sR = 0, sRu = 0, sG = 0;
-        document.querySelectorAll("#dailyBody tr").forEach(r => {
-            let i = JSON.parse(r.dataset.info || '{}');
-            sR += parseFloat(i.res) || 0; 
-            sRu += parseFloat(i.rust) || 0; 
-            sG += parseFloat(i.gmk) || 0;
+        let total = 0, r = 0, g = 0;
+        document.querySelectorAll("#dailyBody tr").forEach(tr => {
+            const d = JSON.parse(tr.dataset.info);
+            total += parseFloat(d.res) || 0;
+            r += parseFloat(d.rust) || 0;
+            g += parseFloat(d.gmk) || 0;
         });
-        document.getElementById('sumRes').innerText = formatStrict(sR);
-        document.getElementById('sumRust').innerText = sRu;
-        document.getElementById('sumGMK').innerText = sG;
-        let target = parseFloat(document.getElementById('customTarget').value) || 0;
-        let diff = target - (sR + sRu + sG);
-        const netResEl = document.getElementById('netResult');
-        netResEl.innerText = formatStrict(diff);
-        netResEl.style.color = diff <= 0 ? "var(--success)" : "var(--danger)";
+        document.getElementById('sumRes').innerText = total.toFixed(2).replace('.', ',');
+        document.getElementById('sumRust').innerText = r;
+        document.getElementById('sumGMK').innerText = g;
     }
 
     function finishDay() {
-        try {
-            let rows = Array.from(document.querySelectorAll("#dailyBody tr"));
-            if (rows.length === 0) {
-                alert("Arşivlenecek veri bulunamadı!");
-                return;
-            }
-            let selectedDate = document.getElementById('targetDate').value || new Date().toLocaleDateString('tr-TR');
-            let stored = localStorage.getItem(STORAGE_KEY);
-            let arc = stored ? JSON.parse(stored) : [];
+        const rows = document.querySelectorAll("#dailyBody tr");
+        if(rows.length === 0) return alert("Liste boş!");
+        if(!confirm("Bu günün verilerini arşive kaydetmek istiyor musunuz?")) return;
 
-            let newDay = {
-                date: selectedDate,
-                items: rows.map(r => JSON.parse(r.dataset.info))
-            };
+        const rawDate = document.getElementById('targetDate').value;
+        const formattedDate = formatDateDisplay(rawDate);
 
-            arc.unshift(newDay);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+        const dayData = {
+            displayDate: formattedDate,
+            items: Array.from(rows).map(r => JSON.parse(r.dataset.info))
+        };
 
-            document.getElementById('dailyBody').innerHTML = ""; 
-            calcSum(); 
-            renderArchive();
-            alert("Günü Bitir: Veriler başarıyla arşivlendi.");
-        } catch (e) {
-            alert("Hata: " + e.message);
-        }
+        // Arşive ekle
+        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        arc.unshift(dayData);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+
+        // Tabloyu temizle
+        document.getElementById('dailyBody').innerHTML = "";
+        calcSum();
+        alert(`İşlem başarılı: ${formattedDate} tarihi ile arşivlendi.`);
     }
 
     function renderArchive() {
-        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         const container = document.getElementById('archiveListContainer');
-        if (arc.length === 0) { container.innerHTML = "Arşiv boş."; return; }
-        container.innerHTML = arc.map((day, idx) => {
-            let totalDk = day.items.reduce((sum, i) => sum + (parseFloat(i.res)||0) + (parseFloat(i.rust)||0) + (parseFloat(i.gmk)||0), 0);
-            return `<div class="archive-item">
-                <div class="archive-header">
-                    <div style="flex-grow:1" onclick="toggleDetails('det-${idx}')"><b>📅 ${day.date}</b> | Toplam: ${formatStrict(totalDk)} DK</div>
-                    <button class="btn-del-day" onclick="deleteArchiveDay(${idx})">SİL</button>
+        
+        if(arc.length === 0) {
+            container.innerHTML = '<div class="card">Arşivde henüz kayıt yok.</div>';
+            return;
+        }
+
+        container.innerHTML = arc.map((day, idx) => `
+            <div class="archive-day-card">
+                <div class="archive-day-header">
+                    <span class="archive-day-title">📅 ${day.displayDate}</span>
+                    <button class="btn-del-day" onclick="deleteDay(${idx})">GÜNÜ SİL</button>
                 </div>
-                <div id="det-${idx}" class="details-table table-wrapper">
+                <div class="table-wrapper" style="margin:0; border:none; border-radius:0;">
                     <table>
-                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>DK</th><th>R</th><th>G</th></tr></thead>
-                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${formatStrict(i.res)}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
+                        <thead>
+                            <tr><th>AUFTRAG</th><th>ADET</th><th>TE</th><th>DK</th><th>R</th><th>G</th></tr>
+                        </thead>
+                        <tbody>
+                            ${day.items.map(i => `
+                                <tr>
+                                    <td>${i.art}</td>
+                                    <td>${i.adet}</td>
+                                    <td>${i.te}</td>
+                                    <td>${i.res.toString().replace('.', ',')}</td>
+                                    <td>${i.rust}</td>
+                                    <td>${i.gmk}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
                     </table>
                 </div>
-            </div>`;
-        }).join('');
+            </div>
+        `).join('');
     }
 
-    function toggleDetails(id) {
-        const el = document.getElementById(id);
-        el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function deleteArchiveDay(idx) {
-        if(confirm("Bu günü silmek istediğinize emin misiniz?")) {
+    function deleteDay(idx) {
+        if(confirm("Bu günlük arşivi silmek istediğinize emin misiniz?")) {
             let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
             arc.splice(idx, 1);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
@@ -249,50 +259,53 @@
         }
     }
 
-    async function toggleScanner() {
-        const readerDiv = document.getElementById('reader');
-        if (scanner) { await scanner.stop(); scanner = null; readerDiv.style.display = 'none'; return; }
-        readerDiv.style.display = 'block';
-        scanner = new Html5Qrcode("reader");
-        try {
-            await scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 250 }, (text) => {
-                document.getElementById('cArt').value = text; fetchTE(text); toggleScanner();
-            });
-        } catch (e) { alert("Kamera hatası!"); toggleScanner(); }
-    }
-
-    function fetchTE(v) {
-        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        let m = db.find(x => x.art === v.toUpperCase().trim());
-        if (m) { document.getElementById('cTE').value = m.te; document.getElementById('cNote').value = m.note || ""; engine(); }
-    }
-
+    // Rehber & Scanner Fonksiyonları (v141.0 ile aynı)
     function saveDb() {
+        const art = document.getElementById('dbArt').value.toUpperCase();
+        const te = document.getElementById('dbTE').value;
+        if(!art || !te) return;
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        db.push({art: document.getElementById('dbArt').value.toUpperCase(), te: document.getElementById('dbTE').value, note: document.getElementById('dbNote').value});
-        localStorage.setItem(DB_KEY, JSON.stringify(db)); renderDbList();
-        document.getElementById('dbArt').value = ""; document.getElementById('dbTE').value = ""; document.getElementById('dbNote').value = "";
+        db.push({ art, te, note: document.getElementById('dbNote').value });
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderDbList();
     }
-
     function renderDbList() {
-        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         document.getElementById('dbListBody').innerHTML = db.map((i, idx) => `<tr><td>${i.art}</td><td>${i.te}</td><td><button onclick="delDb(${idx})" style="color:red; background:none; border:none;">🗑️</button></td></tr>`).join('');
     }
-
-    function delDb(idx) { let db = JSON.parse(localStorage.getItem(DB_KEY)) || []; db.splice(idx,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderDbList(); }
-
+    function delDb(idx) {
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        db.splice(idx, 1);
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderDbList();
+    }
+    function fetchTE(v) {
+        const db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const m = db.find(x => x.art === v.toUpperCase().trim());
+        if(m) {
+            document.getElementById('cTE').value = m.te;
+            document.getElementById('cNote').value = m.note || "";
+            engine();
+        }
+    }
+    async function toggleScanner() {
+        const r = document.getElementById('reader');
+        if(scanner) { await scanner.stop(); scanner = null; r.style.display = 'none'; return; }
+        r.style.display = 'block';
+        scanner = new Html5Qrcode("reader");
+        scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+            document.getElementById('cArt').value = txt; fetchTE(txt); toggleScanner();
+        });
+    }
     function switchTab(id, btn) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(id).classList.add('active'); btn.classList.add('active');
     }
+    function resetEverything() { if(confirm("DİKKAT: Tüm veriler silinecek!")) { localStorage.clear(); location.reload(); } }
 
-    function resetEverything() { if(confirm("TÜM VERİLER SİLİNECEK! Emin misiniz?")) { localStorage.clear(); location.reload(); } }
-    
-    window.onload = () => { 
-        document.getElementById('targetDate').value = new Date().toISOString().split('T')[0]; 
-        renderArchive(); 
-        calcSum(); 
+    window.onload = () => {
+        document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
     };
 </script>
 </body>
