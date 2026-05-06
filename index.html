@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v144.3 - Stabil Geçiş</title>
+    <title>Üretim Takip Pro v144.6</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -17,12 +17,10 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1200px; }
         
-        /* Sekme Stilleri */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; }
-        .tab-btn { padding: 12px 18px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; }
-        .tab-btn.active { background: var(--accent); color: white; border-bottom: 2px solid white; }
+        .tab-btn { padding: 12px 18px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; transition: 0.3s; }
+        .tab-btn.active { background: var(--accent); color: white; }
         
-        /* İçerik Görünürlüğü */
         .tab-content { display: none; width: 100%; }
         .tab-content.active { display: block; }
 
@@ -48,25 +46,25 @@
 
 <div class="container">
     <div class="tabs">
-        <button id="btn-tab1" class="tab-btn active" onclick="switchTab('tab1')">🏠 ÜRETİM</button>
-        <button id="btn-tab-kayit" class="tab-btn" onclick="switchTab('tab-kayit')">🏷️ REHBER</button>
-        <button id="btn-tab-arsiv" class="tab-btn" onclick="switchTab('tab-arsiv')">📜 ARŞİV</button>
+        <button class="tab-btn active" onclick="switchTab(event, 'tab1')">🏠 ÜRETİM</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-kayit')">🏷️ REHBER</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-arsiv')">📜 ARŞİV</button>
     </div>
 
     <div id="tab1" class="tab-content active">
         <div class="card">
             <div id="readerUretim" class="scanner-container"></div>
-            <button class="btn btn-scan" id="scanBtnUretim" onclick="toggleScanner('readerUretim', 'cArt', 'scanBtnUretim')" style="background: #30363d; color: var(--accent); border: 1px solid var(--accent); padding: 10px; font-size: 12px; margin-bottom: 10px; width:100%; border-radius:8px;">📷 AUFTRAG BARKODU TARA</button>
-            <div style="margin-bottom: 12px;"><label>Tarih</label><input type="date" id="targetDate"></div>
-            <div class="grid-inputs">
+            <button class="btn" id="scanBtnUretim" onclick="toggleScanner('readerUretim', 'cArt', 'scanBtnUretim')" style="background: #30363d; color: var(--accent); border: 1px solid var(--accent);">📷 BARKOD TARA</button>
+            <div style="margin-top:10px;"><label>Tarih</label><input type="date" id="targetDate"></div>
+            <div class="grid-inputs" style="margin-top:10px;">
                 <div style="grid-column: span 2;"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
                 <div><label>Adet</label><input type="number" id="cAdet" oninput="smartEngine('adet')"></div>
                 <div><label>TE</label><input type="number" id="cTE" oninput="smartEngine('te')" step="0.001"></div>
-                <div><label>Refa</label><input type="text" id="cRefa" placeholder="Oto dolur"></div>
+                <input type="hidden" id="cRefa"> 
                 <div><label>Verim (v)</label><input type="number" id="cPro" oninput="smartEngine('verim')" placeholder="1.0" step="0.1"></div>
-                <div><label>Dakika (Net)</label><input type="number" id="cRes" oninput="smartEngine('dakika')" step="0.01" style="color:var(--accent); font-weight:bold;"></div>
-                <div><label>Rüst</label><input type="number" id="cRust" oninput="calcSum()"></div>
-                <div><label>GMK</label><input type="number" id="cGMK" oninput="calcSum()"></div>
+                <div><label>Dakika (Net)</label><input type="number" id="cRes" oninput="smartEngine('dakika')" step="0.01"></div>
+                <div><label>Rüst</label><input type="number" id="cRust" value="0"></div>
+                <div><label>GMK</label><input type="number" id="cGMK" value="0"></div>
             </div>
             <button class="btn btn-add" onclick="addRow()">LİSTEYE EKLE</button>
         </div>
@@ -87,19 +85,14 @@
 
     <div id="tab-kayit" class="tab-content">
         <div class="card">
-            <div id="readerRehber" class="scanner-container"></div>
-            <button class="btn btn-scan" id="scanBtnRehber" onclick="toggleScanner('readerRehber', 'dbArt', 'scanBtnRehber')" style="background: #30363d; color: var(--accent); border: 1px solid var(--accent); padding: 10px; font-size: 12px; margin-bottom: 10px; width:100%; border-radius:8px;">📷 REHBER İÇİN BARKOD TARA</button>
-            <div class="grid-inputs" style="margin-top: 10px;">
-                <div><label>ARTİKEL (Auftrag)</label><input type="text" id="dbArt"></div>
+            <div class="grid-inputs">
+                <div><label>ARTİKEL</label><input type="text" id="dbArt"></div>
                 <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
-                <div><label>REFA</label><input type="text" id="dbRefa" placeholder="Operasyon Kodu"></div>
-                <div><label>NOT</label><input type="text" id="dbNote" placeholder="Açıklama"></div>
+                <div><label>REFA</label><input type="text" id="dbRefa"></div>
+                <div><label>NOT</label><input type="text" id="dbNote"></div>
             </div>
             <button class="btn btn-add" onclick="saveDb()">BULUTA KAYDET</button>
-            
-            <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
-            <div class="search-box"><input type="text" id="dbSearch" placeholder="Rehberde ara..." oninput="renderDbList()"></div>
-
+            <div class="search-box" style="margin-top:15px;"><input type="text" id="dbSearch" placeholder="Ara..." oninput="renderDbList()"></div>
             <div class="table-wrapper">
                 <table>
                     <thead><tr><th>ARTİKEL</th><th>TE</th><th>REFA</th><th>NOT</th><th>SİL</th></tr></thead>
@@ -110,17 +103,12 @@
     </div>
     
     <div id="tab-arsiv" class="tab-content">
-        <div class="card">
-            <div class="search-box">
-                <input type="text" id="archiveSearch" placeholder="Tarihe göre ara (Örn: 06.05)..." oninput="renderArchive()">
-            </div>
-        </div>
+        <div class="search-box"><input type="text" id="archiveSearch" placeholder="Tarih ara (06.05)..." oninput="renderArchive()"></div>
         <div id="archiveListContainer"></div>
     </div>
 </div>
 
 <script>
-    // Firebase Config (Önceki bilgilerle aynı)
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -134,188 +122,146 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const rehberRef = db.ref('rehber');
-
     let globalRehber = [];
-    const STORAGE_KEY = 'PRO_V144_DATA';
+    const STORAGE_KEY = 'PRO_V144_FINAL';
     let html5QrCode;
 
-    // SEKMELER ARASI GEÇİŞ (Düzeltildi)
-    function switchTab(tabId) {
-        // Tüm içerikleri gizle
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-        // Tüm butonların aktifliğini kaldır
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        // Hedef içeriği göster
-        document.getElementById(tabId).classList.add('active');
-        // Hedef butonu boya
-        document.getElementById('btn-' + tabId).classList.add('active');
-
-        // Arşiv sekmesine geçildiyse listeyi yenile
+    function switchTab(evt, tabId) {
+        const contents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contents.length; i++) contents[i].style.display = "none";
+        const buttons = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < buttons.length; i++) buttons[i].className = buttons[i].className.replace(" active", "");
+        document.getElementById(tabId).style.display = "block";
+        evt.currentTarget.className += " active";
         if(tabId === 'tab-arsiv') renderArchive();
     }
 
-    // AKILLI HESAP MOTORU
-    function smartEngine(lastChanged) {
+    function smartEngine(source) {
         let adet = parseFloat(document.getElementById('cAdet').value);
         let te = parseFloat(document.getElementById('cTE').value);
         let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
         let dakika = parseFloat(document.getElementById('cRes').value);
 
-        if (lastChanged !== 'adet' && !isNaN(dakika) && !isNaN(te) && te !== 0) {
-            document.getElementById('cAdet').value = Math.round((dakika * verim) / te);
-        } 
-        else if (lastChanged === 'dakika' && !isNaN(adet) && !isNaN(te) && !isNaN(dakika) && dakika !== 0) {
+        if (source === 'dakika' && !isNaN(adet) && !isNaN(te) && dakika > 0) {
             document.getElementById('cPro').value = ((adet * te) / dakika).toFixed(2);
-        }
-        else if (!isNaN(adet) && !isNaN(te)) {
+        } else if (source !== 'adet' && !isNaN(dakika) && !isNaN(te) && te > 0) {
+            document.getElementById('cAdet').value = Math.round((dakika * verim) / te);
+        } else if (!isNaN(adet) && !isNaN(te)) {
             document.getElementById('cRes').value = ((adet * te) / verim).toFixed(2);
         }
     }
 
-    // FIREBASE VERİ ÇEKME
-    rehberRef.on('value', (snapshot) => {
-        const data = snapshot.val();
+    rehberRef.on('value', (snap) => {
         globalRehber = [];
-        if(data) {
-            Object.keys(data).forEach(key => globalRehber.push({id: key, ...data[key]}));
-        }
+        const data = snap.val();
+        if(data) Object.keys(data).forEach(k => globalRehber.push({id: k, ...data[k]}));
         renderDbList();
     });
 
-    function addRow() {
-        const art = document.getElementById('cArt').value.toUpperCase();
-        if(!art) return alert("Auftrag girin!");
-        
-        const info = {
-            art, 
-            adet: document.getElementById('cAdet').value || 0,
-            te: document.getElementById('cTE').value || 0,
-            refa: document.getElementById('cRefa').value || "-",
-            pro: document.getElementById('cPro').value || "1.0",
-            res: parseFloat(document.getElementById('cRes').value || 0).toFixed(2),
-            rust: parseFloat(document.getElementById('cRust').value) || 0,
-            gmk: parseFloat(document.getElementById('cGMK').value) || 0,
-            id: Date.now()
-        };
-
-        const tr = document.createElement('tr');
-        tr.dataset.info = JSON.stringify(info);
-        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.refa}</td><td>${info.pro}</td><td style="color:var(--accent); font-weight:bold;">${info.res.replace('.',,')}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none; cursor:pointer;">❌</button></td>`;
-        document.getElementById('dailyBody').appendChild(tr);
-        calcSum();
-        
-        ['cArt','cAdet','cTE','cRefa','cRes','cRust','cGMK'].forEach(id => document.getElementById(id).value = "");
-        document.getElementById('cPro').value = "1.0";
-    }
-
-    function calcSum() {
-        let total = 0, r = 0, g = 0;
-        document.querySelectorAll("#dailyBody tr").forEach(tr => {
-            const d = JSON.parse(tr.dataset.info);
-            total += parseFloat(d.res); r += parseFloat(d.rust); g += parseFloat(d.gmk);
-        });
-        document.getElementById('sumRes').innerText = total.toFixed(2).replace('.', ',');
-        document.getElementById('sumRust').innerText = r;
-        document.getElementById('sumGMK').innerText = g;
-    }
-
     function fetchTE(v) {
-        const match = globalRehber.find(x => x.art === v.toUpperCase().trim());
-        if(match) { 
-            document.getElementById('cTE').value = match.te; 
-            document.getElementById('cRefa').value = match.refa || "-";
-            smartEngine('te'); 
+        const m = globalRehber.find(x => x.art === v.toUpperCase().trim());
+        if(m) { 
+            document.getElementById('cTE').value = m.te; 
+            document.getElementById('cRefa').value = m.refa || "-";
+            smartEngine('te');
         }
     }
 
-    function saveDb() {
-        const art = document.getElementById('dbArt').value.toUpperCase().trim();
-        const te = parseFloat(document.getElementById('dbTE').value);
-        const refa = document.getElementById('dbRefa').value.trim() || "-";
-        const note = document.getElementById('dbNote').value.trim() || "-";
-        if(!art || isNaN(te)) return alert("Eksik bilgi!");
-        rehberRef.push({art, te, refa, note}).then(() => {
-            ['dbArt','dbTE','dbRefa','dbNote'].forEach(id => document.getElementById(id).value = "");
-            alert("Kaydedildi.");
+    function addRow() {
+        const art = document.getElementById('cArt').value.toUpperCase();
+        if(!art) return alert("Auftrag gir!");
+        const info = {
+            art, adet: document.getElementById('cAdet').value, te: document.getElementById('cTE').value,
+            refa: document.getElementById('cRefa').value || "-", pro: document.getElementById('cPro').value || "1.0",
+            res: document.getElementById('cRes').value, rust: document.getElementById('cRust').value || 0,
+            gmk: document.getElementById('cGMK').value || 0, id: Date.now()
+        };
+        const tr = document.createElement('tr');
+        tr.dataset.info = JSON.stringify(info);
+        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.refa}</td><td>${info.pro}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none;">❌</button></td>`;
+        document.getElementById('dailyBody').appendChild(tr);
+        calcSum();
+        ['cArt','cAdet','cTE','cRefa','cRes','cRust','cGMK'].forEach(id => document.getElementById(id).value = "");
+    }
+
+    function calcSum() {
+        let t = 0, r = 0, g = 0;
+        document.querySelectorAll("#dailyBody tr").forEach(tr => {
+            const d = JSON.parse(tr.dataset.info);
+            t += parseFloat(d.res || 0); r += parseFloat(d.rust || 0); g += parseFloat(d.gmk || 0);
         });
-    }
-
-    function renderDbList() {
-        const searchTerm = document.getElementById('dbSearch').value.toUpperCase();
-        const filtered = globalRehber.filter(i => i.art.includes(searchTerm));
-        document.getElementById('dbListBody').innerHTML = filtered.map((i) => `
-            <tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td>${i.note}</td>
-            <td><button onclick="deleteDb('${i.id}', '${i.art}')" style="background:none; border:none; color:var(--danger);">🗑️</button></td></tr>`).join('');
-    }
-
-    function toggleScanner(readerId, targetInputId, btnId) {
-        const readerDiv = document.getElementById(readerId);
-        const btn = document.getElementById(btnId);
-        if (readerDiv.style.display === 'none' || !readerDiv.style.display) {
-            readerDiv.style.display = 'block'; btn.innerText = "🛑 KAPAT";
-            html5QrCode = new Html5Qrcode(readerId);
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (text) => {
-                document.getElementById(targetInputId).value = text.trim().toUpperCase();
-                if(targetInputId === 'cArt') fetchTE(text.trim());
-                stopScanner(readerDiv, btn);
-            });
-        } else { stopScanner(readerDiv, btn); }
-    }
-
-    function stopScanner(div, btn) {
-        if(html5QrCode) html5QrCode.stop().then(() => {
-            div.style.display = 'none';
-            btn.innerText = "📷 BARKOD TARA";
-        });
+        document.getElementById('sumRes').innerText = t.toFixed(2);
+        document.getElementById('sumRust').innerText = r;
+        document.getElementById('sumGMK').innerText = g;
     }
 
     function finishDay() {
         const rows = document.querySelectorAll("#dailyBody tr");
         if(rows.length === 0) return alert("Liste boş!");
-        const [y, m, d] = document.getElementById('targetDate').value.split("-");
-        const dayRecord = { 
-            date: `${d}.${m}.${y}`, 
+        const dStr = document.getElementById('targetDate').value.split("-").reverse().join(".");
+        const record = { 
+            date: dStr, 
             items: Array.from(rows).map(r => JSON.parse(r.dataset.info)),
-            dayTotal: document.getElementById('sumRes').innerText
+            total: document.getElementById('sumRes').innerText
         };
         let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        arc.unshift(dayRecord);
+        arc.unshift(record);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
         document.getElementById('dailyBody').innerHTML = "";
-        calcSum(); renderArchive(); alert(" arşivlendi!");
+        calcSum(); alert("Arşivlendi!");
     }
 
     function renderArchive() {
         const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const search = document.getElementById('archiveSearch').value;
-        const filtered = arc.filter(day => day.date.includes(search));
+        const s = document.getElementById('archiveSearch').value;
+        const filtered = arc.filter(x => x.date.includes(s));
         document.getElementById('archiveListContainer').innerHTML = filtered.map((day, idx) => `
-            <div class="card" style="padding:0; overflow:hidden;">
-                <div style="background: #1c2128; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
-                    <strong>📅 ${day.date}</strong>
-                    <button onclick="deleteArchive(${idx})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px;">SİL</button>
+            <div class="card" style="padding:0">
+                <div style="padding:10px; background:#1c2128; display:flex; justify-content:space-between">
+                    <b>📅 ${day.date}</b>
+                    <button onclick="deleteArc(${idx})" style="color:red; background:none; border:none;">SİL</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>REFA</th><th>DK</th><th>R</th><th>G</th></tr></thead>
-                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.refa}</td><td>${i.res.replace('.',,')}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
-                        <tfoot><tr class="total-row"><td colspan="3">GÜN TOPLAMI:</td><td colspan="3">${day.dayTotal} DK</td></tr></tfoot>
+                        <thead><tr><th>AUFTRAG</th><th>REFA</th><th>DK</th></tr></thead>
+                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.refa}</td><td>${i.res} dk</td></tr>`).join('')}</tbody>
+                        <tfoot class="total-row"><tr><td colspan="2">GÜN TOPLAMI:</td><td>${day.total} DK</td></tr></tfoot>
                     </table>
                 </div>
-            </div>`).join('') || '<div class="card">Kayıt yok.</div>';
+            </div>`).join('');
     }
 
-    function deleteDb(id, art) { if(confirm(`${art} silinsin mi?`)) db.ref('rehber/' + id).remove(); }
-    function deleteArchive(idx) { if(confirm("Silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx, 1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
+    function saveDb() {
+        const art = document.getElementById('dbArt').value.toUpperCase();
+        const te = document.getElementById('dbTE').value;
+        if(!art || !te) return alert("Eksik!");
+        rehberRef.push({art, te: parseFloat(te), refa: document.getElementById('dbRefa').value, note: document.getElementById('dbNote').value});
+        alert("Buluta eklendi!");
+    }
 
-    window.onload = () => {
-        document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
-    };
+    function renderDbList() {
+        const s = document.getElementById('dbSearch').value.toUpperCase();
+        document.getElementById('dbListBody').innerHTML = globalRehber.filter(x => x.art.includes(s)).map(i => `
+            <tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td>${i.note}</td><td><button onclick="deleteDb('${i.id}')" style="color:red; background:none; border:none;">🗑️</button></td></tr>`).join('');
+    }
+
+    function toggleScanner(rid, tid, bid) {
+        const rd = document.getElementById(rid);
+        if (rd.style.display === 'none' || !rd.style.display) {
+            rd.style.display = 'block';
+            html5QrCode = new Html5Qrcode(rid);
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
+                document.getElementById(tid).value = t.trim().toUpperCase();
+                if(tid === 'cArt') fetchTE(t.trim());
+                html5QrCode.stop(); rd.style.display = 'none';
+            });
+        } else { html5QrCode.stop(); rd.style.display = 'none'; }
+    }
+
+    function deleteDb(id) { if(confirm("Silinsin mi?")) db.ref('rehber/' + id).remove(); }
+    function deleteArc(idx) { if(confirm("Arşiv silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx,1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
+
+    window.onload = () => { document.getElementById('targetDate').value = new Date().toISOString().split('T')[0]; };
 </script>
 </body>
 </html>
