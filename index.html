@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v142.3 - Sıkı Denetim</title>
+    <title>Üretim Takip Pro v144.2 - Akıllı Hesap Motoru</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -25,6 +25,9 @@
         .grid-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 5px; text-transform: uppercase; }
         input { width: 100%; background: var(--input); border: 1px solid var(--border); padding: 12px; color: white; border-radius: 8px; outline: none; box-sizing: border-box; font-size: 14px; }
+        input:focus { border-color: var(--accent); }
+        /* Otomatik hesaplanan alanları belli et */
+        .auto-calc { color: #aff5b4 !important; font-weight: bold; }
         .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 14px; margin-bottom: 5px; }
         .btn-add { background: var(--accent); color: white; margin-top: 10px; }
         .btn-finish { background: var(--purple); color: white; margin-top: 15px; }
@@ -48,7 +51,6 @@
         <button class="tab-btn" onclick="switchTab('tab-arsiv', this); renderArchive();">📜 ARŞİV</button>
     </div>
 
-    <!-- ÜRETİM SEKEMESİ -->
     <div id="tab1" class="tab-content active">
         <div class="card">
             <div id="readerUretim" class="scanner-container"></div>
@@ -56,10 +58,11 @@
             <div style="margin-bottom: 12px;"><label>Tarih</label><input type="date" id="targetDate"></div>
             <div class="grid-inputs">
                 <div style="grid-column: span 2;"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
-                <div><label>Adet</label><input type="number" id="cAdet" oninput="engine()"></div>
-                <div><label>TE</label><input type="number" id="cTE" oninput="engine()" step="0.001"></div>
-                <div><label>Verim (v)</label><input type="number" id="cPro" oninput="engine()" placeholder="1.0" step="0.1"></div>
-                <div><label>Dakika (Net)</label><input type="text" id="cRes" readonly style="color:var(--accent); font-weight:bold;"></div>
+                <div><label>Adet</label><input type="number" id="cAdet" oninput="smartEngine('adet')"></div>
+                <div><label>TE</label><input type="number" id="cTE" oninput="smartEngine('te')" step="0.001"></div>
+                <div><label>Refa</label><input type="text" id="cRefa" placeholder="Oto dolur"></div>
+                <div><label>Verim (v)</label><input type="number" id="cPro" oninput="smartEngine('verim')" placeholder="1.0" step="0.1"></div>
+                <div><label>Dakika (Net)</label><input type="number" id="cRes" oninput="smartEngine('dakika')" step="0.01" style="color:var(--accent); font-weight:bold;"></div>
                 <div><label>Rüst</label><input type="number" id="cRust" oninput="calcSum()"></div>
                 <div><label>GMK</label><input type="number" id="cGMK" oninput="calcSum()"></div>
             </div>
@@ -69,7 +72,7 @@
         <div class="card">
             <div class="table-wrapper">
                 <table>
-                    <thead><tr><th>AUFTRAG</th><th>ADET</th><th>TE</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead>
+                    <thead><tr><th>AUFTRAG</th><th>ADET</th><th>REFA</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead>
                     <tbody id="dailyBody"></tbody>
                     <tfoot>
                         <tr class="total-row"><td colspan="4">TOPLAM:</td><td id="sumRes">0,00</td><td id="sumRust">0</td><td id="sumGMK">0</td><td></td></tr>
@@ -80,7 +83,6 @@
         </div>
     </div>
 
-    <!-- REHBER SEKEMESİ -->
     <div id="tab-kayit" class="tab-content">
         <div class="card">
             <div id="readerRehber" class="scanner-container"></div>
@@ -88,19 +90,17 @@
             <div class="grid-inputs" style="margin-top: 10px;">
                 <div><label>ARTİKEL (Auftrag)</label><input type="text" id="dbArt"></div>
                 <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
-                <div style="grid-column: span 2;"><label>NOT (Opsiyonel Açıklama)</label><input type="text" id="dbNote" placeholder="Açıklama girin"></div>
+                <div><label>REFA</label><input type="text" id="dbRefa" placeholder="Operasyon Kodu"></div>
+                <div><label>NOT</label><input type="text" id="dbNote" placeholder="Açıklama"></div>
             </div>
             <button class="btn btn-add" onclick="saveDb()">BULUTA KAYDET</button>
             
             <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
-            
-            <div class="search-box">
-                <input type="text" id="dbSearch" placeholder="Rehberde ara (Artikel veya Not)..." oninput="renderDbList()">
-            </div>
+            <div class="search-box"><input type="text" id="dbSearch" placeholder="Rehberde ara..." oninput="renderDbList()"></div>
 
             <div class="table-wrapper">
-                <table id="dbTable">
-                    <thead><tr><th>ARTİKEL</th><th>TE</th><th>NOT</th><th>SİL</th></tr></thead>
+                <table>
+                    <thead><tr><th>ARTİKEL</th><th>TE</th><th>REFA</th><th>NOT</th><th>SİL</th></tr></thead>
                     <tbody id="dbListBody"></tbody>
                 </table>
             </div>
@@ -108,11 +108,17 @@
     </div>
     
     <div id="tab-arsiv" class="tab-content">
+        <div class="card">
+            <div class="search-box">
+                <input type="text" id="archiveSearch" placeholder="Tarihe göre ara (Örn: 06.05)..." oninput="renderArchive()">
+            </div>
+        </div>
         <div id="archiveListContainer"></div>
     </div>
 </div>
 
 <script>
+    // Firebase Yapılandırması (Kayıtlı bilgilerin)
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -128,109 +134,108 @@
     const rehberRef = db.ref('rehber');
 
     let globalRehber = [];
+    const STORAGE_KEY = 'PRO_V144_DATA';
+    let html5QrCode;
+
     rehberRef.on('value', (snapshot) => {
         const data = snapshot.val();
         globalRehber = [];
         if(data) {
-            Object.keys(data).forEach(key => {
-                globalRehber.push({id: key, ...data[key]});
-            });
+            Object.keys(data).forEach(key => globalRehber.push({id: key, ...data[key]}));
         }
         renderDbList();
     });
 
-    const STORAGE_KEY = 'PRO_V141_DATA';
-    let html5QrCode;
+    // --- YENİ AKILLI HESAP MOTORU ---
+    function smartEngine(lastChanged) {
+        let adet = parseFloat(document.getElementById('cAdet').value);
+        let te = parseFloat(document.getElementById('cTE').value);
+        let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
+        let dakika = parseFloat(document.getElementById('cRes').value);
 
-    function engine() {
-        const a = parseFloat(document.getElementById('cAdet').value) || 0;
-        const t = parseFloat(document.getElementById('cTE').value) || 0;
-        const vInput = document.getElementById('cPro').value;
-        const v = (vInput === "" || parseFloat(vInput) === 0) ? 1.0 : parseFloat(vInput);
-        const result = (a * t) / v;
-        document.getElementById('cRes').value = result.toFixed(2).replace('.', ',');
+        // SENARYO 1: Dakika, TE ve Verim var -> ADET BUL
+        if (lastChanged !== 'adet' && !isNaN(dakika) && !isNaN(te) && te !== 0) {
+            let hesapAdet = (dakika * verim) / te;
+            document.getElementById('cAdet').value = Math.round(hesapAdet);
+        } 
+        // SENARYO 2: Adet, TE ve Dakika var -> VERİM BUL
+        else if (lastChanged === 'dakika' && !isNaN(adet) && !isNaN(te) && !isNaN(dakika) && dakika !== 0) {
+            let hesapVerim = (adet * te) / dakika;
+            document.getElementById('cPro').value = hesapVerim.toFixed(2);
+        }
+        // SENARYO 3: Adet, TE ve Verim var (Standart) -> DAKİKA BUL
+        else if (!isNaN(adet) && !isNaN(te)) {
+            let hesapDk = (adet * te) / verim;
+            document.getElementById('cRes').value = hesapDk.toFixed(2);
+        }
     }
 
     function addRow() {
         const art = document.getElementById('cArt').value.toUpperCase();
         if(!art) return alert("Auftrag girin!");
-        const vInput = document.getElementById('cPro').value;
-        const vSave = (vInput === "" || parseFloat(vInput) === 0) ? "1.0" : vInput;
-
+        
         const info = {
-            art, adet: document.getElementById('cAdet').value || 0,
+            art, 
+            adet: document.getElementById('cAdet').value || 0,
             te: document.getElementById('cTE').value || 0,
-            pro: vSave,
-            res: document.getElementById('cRes').value.replace(',', '.') || 0,
-            rust: document.getElementById('cRust').value || 0,
-            gmk: document.getElementById('cGMK').value || 0,
+            refa: document.getElementById('cRefa').value || "-",
+            pro: document.getElementById('cPro').value || "1.0",
+            res: parseFloat(document.getElementById('cRes').value || 0).toFixed(2),
+            rust: parseFloat(document.getElementById('cRust').value) || 0,
+            gmk: parseFloat(document.getElementById('cGMK').value) || 0,
             id: Date.now()
         };
+
         const tr = document.createElement('tr');
-        tr.id = `row-${info.id}`;
         tr.dataset.info = JSON.stringify(info);
-        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.te}</td><td>${info.pro}</td><td style="color:var(--accent); font-weight:bold;">${info.res.toString().replace('.',',')}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none;">❌</button></td>`;
+        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.refa}</td><td>${info.pro}</td><td style="color:var(--accent); font-weight:bold;">${info.res.replace('.',',')}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none; cursor:pointer;">❌</button></td>`;
         document.getElementById('dailyBody').appendChild(tr);
         calcSum();
-        ['cArt','cAdet','cTE','cRes','cRust','cGMK', 'cPro'].forEach(id => document.getElementById(id).value = "");
+        
+        ['cArt','cAdet','cTE','cRefa','cRes','cRust','cGMK'].forEach(id => document.getElementById(id).value = "");
+        document.getElementById('cPro').value = "";
     }
 
-    function saveDb() {
-        const art = document.getElementById('dbArt').value.toUpperCase().trim();
-        const teValue = document.getElementById('dbTE').value;
-        const note = document.getElementById('dbNote').value.trim() || "-";
-        
-        if(!art || !teValue) return alert("Artikel ve TE zorunludur!");
-        const te = parseFloat(teValue);
-
-        // --- ENGELEME MANTIĞI ---
-        // Sadece Artikel ve TE aynı mı diye bakıyoruz. Not önemli değil.
-        const isDuplicate = globalRehber.find(x => 
-            x.art === art && 
-            parseFloat(x.te) === te
-        );
-
-        if(isDuplicate) {
-            alert(`🛑 HATA: "${art}" Artikel numarası ve "${te}" TE değeri ile zaten bir kayıt var. Aynı bilgiyi tekrar ekleyemezsiniz.`);
-            return; // Firebase'e göndermeyi durdurur.
-        }
-        
-        rehberRef.push({art, te, note}).then(() => {
-            document.getElementById('dbArt').value="";
-            document.getElementById('dbTE').value="";
-            document.getElementById('dbNote').value="";
-            alert("✅ Kaydedildi.");
+    function calcSum() {
+        let total = 0, r = 0, g = 0;
+        document.querySelectorAll("#dailyBody tr").forEach(tr => {
+            const d = JSON.parse(tr.dataset.info);
+            total += parseFloat(d.res); 
+            r += parseFloat(d.rust); 
+            g += parseFloat(d.gmk);
         });
-    }
-
-    function deleteDb(id, artName) {
-        if(confirm(`"${artName}" parçası buluttan kalıcı olarak SİLİNECEK. Emin misiniz?`)) {
-            db.ref('rehber/' + id).remove();
-        }
-    }
-
-    function renderDbList() {
-        const searchTerm = document.getElementById('dbSearch').value.toUpperCase();
-        const filtered = globalRehber.filter(i => 
-            i.art.toUpperCase().includes(searchTerm) || 
-            (i.note && i.note.toUpperCase().includes(searchTerm))
-        );
-
-        document.getElementById('dbListBody').innerHTML = filtered.map((i) => `
-            <tr>
-                <td>${i.art}</td>
-                <td>${i.te}</td>
-                <td style="color:#8b949e; font-size:12px;">${i.note || "-"}</td>
-                <td><button onclick="deleteDb('${i.id}', '${i.art}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:16px;">🗑️</button></td>
-            </tr>`).join('');
+        document.getElementById('sumRes').innerText = total.toFixed(2).replace('.', ',');
+        document.getElementById('sumRust').innerText = r;
+        document.getElementById('sumGMK').innerText = g;
     }
 
     function fetchTE(v) {
         const match = globalRehber.find(x => x.art === v.toUpperCase().trim());
         if(match) { 
             document.getElementById('cTE').value = match.te; 
-            engine(); 
+            document.getElementById('cRefa').value = match.refa || "-";
+            smartEngine('te'); 
         }
+    }
+
+    function saveDb() {
+        const art = document.getElementById('dbArt').value.toUpperCase().trim();
+        const te = parseFloat(document.getElementById('dbTE').value);
+        const refa = document.getElementById('dbRefa').value.trim() || "-";
+        const note = document.getElementById('dbNote').value.trim() || "-";
+        if(!art || isNaN(te)) return alert("Artikel ve TE zorunludur!");
+        rehberRef.push({art, te, refa, note}).then(() => {
+            ['dbArt','dbTE','dbRefa','dbNote'].forEach(id => document.getElementById(id).value = "");
+            alert("✅ Kaydedildi.");
+        });
+    }
+
+    function renderDbList() {
+        const searchTerm = document.getElementById('dbSearch').value.toUpperCase();
+        const filtered = globalRehber.filter(i => i.art.includes(searchTerm));
+        document.getElementById('dbListBody').innerHTML = filtered.map((i) => `
+            <tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa || "-"}</td><td>${i.note || "-"}</td>
+            <td><button onclick="deleteDb('${i.id}', '${i.art}')" style="background:none; border:none; color:var(--danger);">🗑️</button></td></tr>`).join('');
     }
 
     function switchTab(id, btn) {
@@ -243,12 +248,11 @@
         const readerDiv = document.getElementById(readerId);
         const btn = document.getElementById(btnId);
         if (readerDiv.style.display === 'none' || !readerDiv.style.display) {
-            readerDiv.style.display = 'block'; btn.innerText = "🛑 TARAMAYI KAPAT";
+            readerDiv.style.display = 'block'; btn.innerText = "🛑 KAPAT";
             html5QrCode = new Html5Qrcode(readerId);
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
-                const cleanText = decodedText.trim().toUpperCase();
-                document.getElementById(targetInputId).value = cleanText;
-                if(targetInputId === 'cArt') fetchTE(cleanText);
+            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (text) => {
+                document.getElementById(targetInputId).value = text.trim().toUpperCase();
+                if(targetInputId === 'cArt') fetchTE(text.trim());
                 stopScanner(readerDiv, btn);
             });
         } else { stopScanner(readerDiv, btn); }
@@ -257,52 +261,47 @@
     function stopScanner(div, btn) {
         if(html5QrCode) html5QrCode.stop().then(() => {
             div.style.display = 'none';
-            btn.innerText = (btn.id === 'scanBtnUretim') ? "📷 AUFTRAG BARKODU TARA" : "📷 REHBER İÇİN BARKOD TARA";
+            btn.innerText = "📷 BARKOD TARA";
         });
-    }
-
-    function calcSum() {
-        let total = 0, r = 0, g = 0;
-        document.querySelectorAll("#dailyBody tr").forEach(tr => {
-            const d = JSON.parse(tr.dataset.info);
-            total += parseFloat(d.res); r += parseFloat(d.rust); g += parseFloat(d.gmk);
-        });
-        document.getElementById('sumRes').innerText = total.toFixed(2).replace('.', ',');
-        document.getElementById('sumRust').innerText = r;
-        document.getElementById('sumGMK').innerText = g;
     }
 
     function finishDay() {
         const rows = document.querySelectorAll("#dailyBody tr");
         if(rows.length === 0) return alert("Liste boş!");
         const [y, m, d] = document.getElementById('targetDate').value.split("-");
-        const formattedDate = `${d}.${m}.${y}`;
-        const dayRecord = { date: formattedDate, items: Array.from(rows).map(r => JSON.parse(r.dataset.info)) };
+        const dayRecord = { 
+            date: `${d}.${m}.${y}`, 
+            items: Array.from(rows).map(r => JSON.parse(r.dataset.info)),
+            dayTotal: document.getElementById('sumRes').innerText
+        };
         let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         arc.unshift(dayRecord);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
         document.getElementById('dailyBody').innerHTML = "";
-        calcSum(); alert("Gün arşivlendi!"); renderArchive();
+        calcSum(); renderArchive(); alert("Gün arşivlendi!");
     }
 
     function renderArchive() {
         const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const container = document.getElementById('archiveListContainer');
-        container.innerHTML = arc.map((day, idx) => `
-            <div class="card" style="border: 1px solid var(--border); padding:0; overflow:hidden;">
+        const search = document.getElementById('archiveSearch').value;
+        const filtered = arc.filter(day => day.date.includes(search));
+        document.getElementById('archiveListContainer').innerHTML = filtered.map((day, idx) => `
+            <div class="card" style="padding:0; overflow:hidden;">
                 <div style="background: #1c2128; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <strong>📅 ${day.date}</strong>
-                    <button onclick="deleteArchive(${idx})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">SİL</button>
+                    <button onclick="deleteArchive(${idx})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px;">SİL</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th></tr></thead>
-                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.pro}</td><td>${i.res.toString().replace('.',',')}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
+                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>REFA</th><th>DK</th><th>R</th><th>G</th></tr></thead>
+                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.refa}</td><td>${i.res.replace('.',,')}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
+                        <tfoot><tr class="total-row"><td colspan="3">GÜN TOPLAMI:</td><td colspan="3">${day.dayTotal} DK</td></tr></tfoot>
                     </table>
                 </div>
-            </div>`).join('') || '<div class="card">Arşiv henüz boş.</div>';
+            </div>`).join('') || '<div class="card">Kayıt yok.</div>';
     }
 
+    function deleteDb(id, art) { if(confirm(`${art} silinsin mi?`)) db.ref('rehber/' + id).remove(); }
     function deleteArchive(idx) { if(confirm("Silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx, 1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
 
     window.onload = () => {
