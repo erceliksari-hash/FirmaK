@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v144.6</title>
+    <title>Üretim Takip Pro v147 - Kesin Segment Tamiri</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -17,54 +17,56 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1200px; }
         
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; }
-        .tab-btn { padding: 12px 18px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; transition: 0.3s; }
-        .tab-btn.active { background: var(--accent); color: white; }
+        /* SEGMENT BUTONLARI */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { padding: 12px 20px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 14px; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent) !important; color: white !important; }
         
+        /* İÇERİKLER */
         .tab-content { display: none; width: 100%; }
-        .tab-content.active { display: block; }
 
         .card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .grid-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 5px; text-transform: uppercase; }
         input { width: 100%; background: var(--input); border: 1px solid var(--border); padding: 12px; color: white; border-radius: 8px; outline: none; box-sizing: border-box; font-size: 14px; }
-        .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 14px; margin-bottom: 5px; }
+        
+        .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; }
         .btn-add { background: var(--accent); color: white; margin-top: 10px; }
         .btn-finish { background: var(--purple); color: white; margin-top: 15px; }
+        
         .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th { background: #21262d; padding: 10px; text-align: left; font-size: 11px; color: #8b949e; }
         td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
-        .total-row { background: #1c2128; font-weight: bold; color: var(--accent); }
-        .scanner-container { width: 100%; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; border: 1px solid var(--accent); }
-        .search-box { margin-bottom: 15px; position: relative; }
-        .search-box input { border: 1px solid var(--accent); padding-left: 35px; background: #1c2128; }
-        .search-box::before { content: "🔍"; position: absolute; left: 12px; top: 12px; font-size: 14px; z-index: 1; }
+        
+        .calc-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; background: #0d1117; padding: 10px; border-radius: 8px; border: 1px dashed var(--border); }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab(event, 'tab1')">🏠 ÜRETİM</button>
-        <button class="tab-btn" onclick="switchTab(event, 'tab-kayit')">🏷️ REHBER</button>
-        <button class="tab-btn" onclick="switchTab(event, 'tab-arsiv')">📜 ARŞİV</button>
+        <button id="nav-tab1" class="tab-btn active" onclick="universalTab('tab1')">🏠 ÜRETİM</button>
+        <button id="nav-tab2" class="tab-btn" onclick="universalTab('tab2')">🏷️ REHBER</button>
+        <button id="nav-tab3" class="tab-btn" onclick="universalTab('tab3')">📜 ARŞİV</button>
     </div>
 
-    <div id="tab1" class="tab-content active">
+    <div id="tab1" class="tab-content" style="display: block;">
         <div class="card">
-            <div id="readerUretim" class="scanner-container"></div>
-            <button class="btn" id="scanBtnUretim" onclick="toggleScanner('readerUretim', 'cArt', 'scanBtnUretim')" style="background: #30363d; color: var(--accent); border: 1px solid var(--accent);">📷 BARKOD TARA</button>
+            <div id="readerUretim" style="display:none; border-radius:12px; overflow:hidden; margin-bottom:10px; border:1px solid var(--accent);"></div>
+            <button class="btn" onclick="toggleScanner('readerUretim', 'cArt')" style="background:#30363d; color:var(--accent);">📷 BARKOD TARA</button>
+            
             <div style="margin-top:10px;"><label>Tarih</label><input type="date" id="targetDate"></div>
+            
             <div class="grid-inputs" style="margin-top:10px;">
                 <div style="grid-column: span 2;"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
-                <div><label>Adet</label><input type="number" id="cAdet" oninput="smartEngine('adet')"></div>
-                <div><label>TE</label><input type="number" id="cTE" oninput="smartEngine('te')" step="0.001"></div>
-                <input type="hidden" id="cRefa"> 
-                <div><label>Verim (v)</label><input type="number" id="cPro" oninput="smartEngine('verim')" placeholder="1.0" step="0.1"></div>
-                <div><label>Dakika (Net)</label><input type="number" id="cRes" oninput="smartEngine('dakika')" step="0.01"></div>
+                <div><label>Adet</label><input type="number" id="cAdet" oninput="safeEngine('adet')"></div>
+                <div><label>TE</label><input type="number" id="cTE" oninput="safeEngine('te')" step="0.001"></div>
+                <div><label>Verim (v)</label><input type="number" id="cPro" oninput="safeEngine('verim')" value="1.0" step="0.1"></div>
+                <div><label>Dakika (Net)</label><input type="number" id="cRes" oninput="safeEngine('dakika')" step="0.01"></div>
                 <div><label>Rüst</label><input type="number" id="cRust" value="0"></div>
                 <div><label>GMK</label><input type="number" id="cGMK" value="0"></div>
+                <input type="hidden" id="cRefa">
             </div>
             <button class="btn btn-add" onclick="addRow()">LİSTEYE EKLE</button>
         </div>
@@ -72,18 +74,22 @@
         <div class="card">
             <div class="table-wrapper">
                 <table>
-                    <thead><tr><th>AUFTRAG</th><th>ADET</th><th>REFA</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead>
+                    <thead><tr><th>AUFTRAG</th><th>ADET</th><th>V</th><th>DK (Net)</th><th>R</th><th>G</th><th>❌</th></tr></thead>
                     <tbody id="dailyBody"></tbody>
-                    <tfoot>
-                        <tr class="total-row"><td colspan="4">TOPLAM:</td><td id="sumRes">0,00</td><td id="sumRust">0</td><td id="sumGMK">0</td><td></td></tr>
-                    </tfoot>
                 </table>
+            </div>
+            <div class="calc-panel">
+                <div><label>TOPLAM (Dk+R+G)</label><div id="grandTotalLabel" style="font-size: 18px; font-weight: bold; color: var(--accent);">0.00</div></div>
+                <div><label>HEDEF DAKİKA</label><input type="number" id="targetLimit" value="480" oninput="calcSum()" style="height:30px;"></div>
+                <div style="grid-column: span 2; text-align: center; border-top: 1px solid var(--border); padding-top: 8px;">
+                    <span id="diffLabel" style="font-weight: bold;">KALAN: 480.00 dk</span>
+                </div>
             </div>
             <button class="btn btn-finish" onclick="finishDay()">GÜNÜ BİTİR VE ARŞİVLE</button>
         </div>
     </div>
 
-    <div id="tab-kayit" class="tab-content">
+    <div id="tab2" class="tab-content">
         <div class="card">
             <div class="grid-inputs">
                 <div><label>ARTİKEL</label><input type="text" id="dbArt"></div>
@@ -92,23 +98,66 @@
                 <div><label>NOT</label><input type="text" id="dbNote"></div>
             </div>
             <button class="btn btn-add" onclick="saveDb()">BULUTA KAYDET</button>
-            <div class="search-box" style="margin-top:15px;"><input type="text" id="dbSearch" placeholder="Ara..." oninput="renderDbList()"></div>
-            <div class="table-wrapper">
-                <table>
-                    <thead><tr><th>ARTİKEL</th><th>TE</th><th>REFA</th><th>NOT</th><th>SİL</th></tr></thead>
-                    <tbody id="dbListBody"></tbody>
-                </table>
+            <div class="table-wrapper" style="margin-top:15px;">
+                <table><thead><tr><th>ARTİKEL</th><th>TE</th><th>REFA</th><th>SİL</th></tr></thead><tbody id="dbListBody"></tbody></table>
             </div>
         </div>
     </div>
-    
-    <div id="tab-arsiv" class="tab-content">
-        <div class="search-box"><input type="text" id="archiveSearch" placeholder="Tarih ara (06.05)..." oninput="renderArchive()"></div>
+
+    <div id="tab3" class="tab-content">
+        <div class="card">
+            <input type="text" id="archiveSearch" placeholder="Tarih Ara (GG.AA.YYYY)" oninput="renderArchive()" style="margin-bottom:10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button class="btn" onclick="exportJSON()" style="background:#1c2128; color:#aff5b4; border:1px solid var(--success); font-size:12px;">📥 YEDEK AL</button>
+                <button class="btn" onclick="document.getElementById('importFile').click()" style="background:#1c2128; color:#ffab70; border:1px solid #ff7b72; font-size:12px;">📤 YÜKLE</button>
+                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJSON(event)">
+            </div>
+        </div>
         <div id="archiveListContainer"></div>
     </div>
 </div>
 
 <script>
+    // --- SEGMENT YÖNETİMİ (KESİN ÇÖZÜM) ---
+    function universalTab(id) {
+        // 1. Tüm içerikleri kapat
+        document.getElementById('tab1').style.display = 'none';
+        document.getElementById('tab2').style.display = 'none';
+        document.getElementById('tab3').style.display = 'none';
+        
+        // 2. Tüm butonların aktifliğini sil
+        document.getElementById('nav-tab1').classList.remove('active');
+        document.getElementById('nav-tab2').classList.remove('active');
+        document.getElementById('nav-tab3').classList.remove('active');
+        
+        // 3. İstenen segmenti aç ve butonu boya
+        document.getElementById(id).style.display = 'block';
+        document.getElementById('nav-' + id).classList.add('active');
+        
+        if(id === 'tab3') renderArchive();
+    }
+
+    // --- HESAPLAMA MOTORU (ADETİ KORU) ---
+    function safeEngine(source) {
+        let adet = parseFloat(document.getElementById('cAdet').value);
+        let te = parseFloat(document.getElementById('cTE').value);
+        let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
+        let dakika = parseFloat(document.getElementById('cRes').value);
+
+        if (source === 'dakika') {
+            // Sadece DAKİKA değişirse Adet yeniden hesaplanır
+            if (dakika > 0 && te > 0) {
+                document.getElementById('cAdet').value = Math.round((dakika * verim) / te);
+            }
+        } else {
+            // Adet veya TE veya Verim değişirse sadece DAKİKA hesaplanır (Adet korunur)
+            if (adet > 0 && te > 0) {
+                document.getElementById('cRes').value = ((adet * te) / verim).toFixed(2);
+            }
+        }
+    }
+
+    // --- FIREBASE VE VERİ KORUMA ---
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -118,38 +167,11 @@
         messagingSenderId: "521525493127",
         appId: "1:521525493127:web:e8a611de175ea9ea44a722"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const rehberRef = db.ref('rehber');
     let globalRehber = [];
-    const STORAGE_KEY = 'PRO_V144_FINAL';
-    let html5QrCode;
-
-    function switchTab(evt, tabId) {
-        const contents = document.getElementsByClassName("tab-content");
-        for (let i = 0; i < contents.length; i++) contents[i].style.display = "none";
-        const buttons = document.getElementsByClassName("tab-btn");
-        for (let i = 0; i < buttons.length; i++) buttons[i].className = buttons[i].className.replace(" active", "");
-        document.getElementById(tabId).style.display = "block";
-        evt.currentTarget.className += " active";
-        if(tabId === 'tab-arsiv') renderArchive();
-    }
-
-    function smartEngine(source) {
-        let adet = parseFloat(document.getElementById('cAdet').value);
-        let te = parseFloat(document.getElementById('cTE').value);
-        let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
-        let dakika = parseFloat(document.getElementById('cRes').value);
-
-        if (source === 'dakika' && !isNaN(adet) && !isNaN(te) && dakika > 0) {
-            document.getElementById('cPro').value = ((adet * te) / dakika).toFixed(2);
-        } else if (source !== 'adet' && !isNaN(dakika) && !isNaN(te) && te > 0) {
-            document.getElementById('cAdet').value = Math.round((dakika * verim) / te);
-        } else if (!isNaN(adet) && !isNaN(te)) {
-            document.getElementById('cRes').value = ((adet * te) / verim).toFixed(2);
-        }
-    }
+    const STORAGE_KEY = 'FIRMAK_PRO_ARCHIVE_V1';
 
     rehberRef.on('value', (snap) => {
         globalRehber = [];
@@ -163,7 +185,7 @@
         if(m) { 
             document.getElementById('cTE').value = m.te; 
             document.getElementById('cRefa').value = m.refa || "-";
-            smartEngine('te');
+            safeEngine('te');
         }
     }
 
@@ -172,94 +194,103 @@
         if(!art) return alert("Auftrag gir!");
         const info = {
             art, adet: document.getElementById('cAdet').value, te: document.getElementById('cTE').value,
-            refa: document.getElementById('cRefa').value || "-", pro: document.getElementById('cPro').value || "1.0",
-            res: document.getElementById('cRes').value, rust: document.getElementById('cRust').value || 0,
-            gmk: document.getElementById('cGMK').value || 0, id: Date.now()
+            verim: document.getElementById('cPro').value, res: document.getElementById('cRes').value,
+            rust: document.getElementById('cRust').value || 0, gmk: document.getElementById('cGMK').value || 0,
+            refa: document.getElementById('cRefa').value || "-", id: Date.now()
         };
         const tr = document.createElement('tr');
         tr.dataset.info = JSON.stringify(info);
-        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.refa}</td><td>${info.pro}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none;">❌</button></td>`;
+        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.verim}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td>
+                        <td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none; font-weight:bold;">❌</button></td>`;
         document.getElementById('dailyBody').appendChild(tr);
         calcSum();
-        ['cArt','cAdet','cTE','cRefa','cRes','cRust','cGMK'].forEach(id => document.getElementById(id).value = "");
+        ['cArt','cAdet','cTE','cRes','cRust','cGMK'].forEach(id => document.getElementById(id).value = "");
+        document.getElementById('cPro').value = "1.0";
     }
 
     function calcSum() {
-        let t = 0, r = 0, g = 0;
+        let net = 0, rst = 0, gmk = 0;
         document.querySelectorAll("#dailyBody tr").forEach(tr => {
             const d = JSON.parse(tr.dataset.info);
-            t += parseFloat(d.res || 0); r += parseFloat(d.rust || 0); g += parseFloat(d.gmk || 0);
+            net += parseFloat(d.res || 0);
+            rst += parseFloat(d.rust || 0);
+            gmk += parseFloat(d.gmk || 0);
         });
-        document.getElementById('sumRes').innerText = t.toFixed(2);
-        document.getElementById('sumRust').innerText = r;
-        document.getElementById('sumGMK').innerText = g;
+        const total = net + rst + gmk;
+        const target = parseFloat(document.getElementById('targetLimit').value) || 0;
+        document.getElementById('grandTotalLabel').innerText = total.toFixed(2);
+        const diff = target - total;
+        const diffLabel = document.getElementById('diffLabel');
+        diffLabel.innerText = `KALAN: ${diff.toFixed(2)} dk`;
+        diffLabel.style.color = diff < 0 ? '#f85149' : '#aff5b4';
     }
 
     function finishDay() {
         const rows = document.querySelectorAll("#dailyBody tr");
         if(rows.length === 0) return alert("Liste boş!");
-        const dStr = document.getElementById('targetDate').value.split("-").reverse().join(".");
-        const record = { 
-            date: dStr, 
+        const rawDate = document.getElementById('targetDate').value || new Date().toISOString().split('T')[0];
+        const dayRecord = {
+            date: rawDate.split("-").reverse().join("."),
             items: Array.from(rows).map(r => JSON.parse(r.dataset.info)),
-            total: document.getElementById('sumRes').innerText
+            totalDk: document.getElementById('grandTotalLabel').innerText,
+            id: Date.now()
         };
-        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        arc.unshift(record);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+        let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        archive.unshift(dayRecord);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
         document.getElementById('dailyBody').innerHTML = "";
-        calcSum(); alert("Arşivlendi!");
+        calcSum();
+        alert("Arşivlendi!");
+        universalTab('tab3');
     }
 
     function renderArchive() {
-        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const s = document.getElementById('archiveSearch').value;
-        const filtered = arc.filter(x => x.date.includes(s));
-        document.getElementById('archiveListContainer').innerHTML = filtered.map((day, idx) => `
-            <div class="card" style="padding:0">
-                <div style="padding:10px; background:#1c2128; display:flex; justify-content:space-between">
-                    <b>📅 ${day.date}</b>
-                    <button onclick="deleteArc(${idx})" style="color:red; background:none; border:none;">SİL</button>
+        const archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const search = document.getElementById('archiveSearch').value;
+        const container = document.getElementById('archiveListContainer');
+        const filtered = archive.filter(day => day.date.includes(search));
+        container.innerHTML = filtered.map((day, dIdx) => `
+            <div class="card" style="padding:0; overflow:hidden;">
+                <div style="background:#1c2128; padding:10px; display:flex; justify-content:space-between; border-bottom:1px solid #30363d;">
+                    <b style="color:var(--accent)">📅 ${day.date}</b>
+                    <button onclick="deleteDay(${dIdx})" style="background:var(--danger); color:white; border:none; padding:3px 8px; border-radius:4px; font-size:10px;">SİL</button>
                 </div>
                 <div class="table-wrapper">
                     <table>
-                        <thead><tr><th>AUFTRAG</th><th>REFA</th><th>DK</th></tr></thead>
-                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.refa}</td><td>${i.res} dk</td></tr>`).join('')}</tbody>
-                        <tfoot class="total-row"><tr><td colspan="2">GÜN TOPLAMI:</td><td>${day.total} DK</td></tr></tfoot>
+                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>DK</th><th>R</th><th>G</th></tr></thead>
+                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.res}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
+                        <tfoot><tr style="background:#161b22; font-weight:bold; color:var(--accent);"><td colspan="3">TOPLAM:</td><td colspan="2">${day.totalDk} DK</td></tr></tfoot>
                     </table>
                 </div>
             </div>`).join('');
     }
 
+    function deleteDay(idx) { if(confirm("Silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx,1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
     function saveDb() {
         const art = document.getElementById('dbArt').value.toUpperCase();
         const te = document.getElementById('dbTE').value;
         if(!art || !te) return alert("Eksik!");
         rehberRef.push({art, te: parseFloat(te), refa: document.getElementById('dbRefa').value, note: document.getElementById('dbNote').value});
-        alert("Buluta eklendi!");
+        alert("Kaydedildi!");
+        ['dbArt','dbTE','dbRefa','dbNote'].forEach(id => document.getElementById(id).value = "");
     }
-
-    function renderDbList() {
-        const s = document.getElementById('dbSearch').value.toUpperCase();
-        document.getElementById('dbListBody').innerHTML = globalRehber.filter(x => x.art.includes(s)).map(i => `
-            <tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td>${i.note}</td><td><button onclick="deleteDb('${i.id}')" style="color:red; background:none; border:none;">🗑️</button></td></tr>`).join('');
-    }
-
-    function toggleScanner(rid, tid, bid) {
-        const rd = document.getElementById(rid);
-        if (rd.style.display === 'none' || !rd.style.display) {
-            rd.style.display = 'block';
-            html5QrCode = new Html5Qrcode(rid);
-            html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-                document.getElementById(tid).value = t.trim().toUpperCase();
-                if(tid === 'cArt') fetchTE(t.trim());
-                html5QrCode.stop(); rd.style.display = 'none';
-            });
-        } else { html5QrCode.stop(); rd.style.display = 'none'; }
-    }
-
+    function renderDbList() { document.getElementById('dbListBody').innerHTML = globalRehber.map(i => `<tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td><button onclick="deleteDb('${i.id}')" style="color:var(--danger); background:none; border:none;">🗑️</button></td></tr>`).join(''); }
     function deleteDb(id) { if(confirm("Silinsin mi?")) db.ref('rehber/' + id).remove(); }
-    function deleteArc(idx) { if(confirm("Arşiv silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx,1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
+    function exportJSON() { const data = localStorage.getItem(STORAGE_KEY); if(!data) return; const blob = new Blob([data], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Arsiv_Yedek.json`; a.click(); }
+    function importJSON(event) { const file = event.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const d = JSON.parse(e.target.result); localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); renderArchive(); alert("Yüklendi!"); } catch(e) {alert("Hata!")} }; reader.readAsText(file); }
+
+    function toggleScanner(rid, tid) {
+        const rd = document.getElementById(rid);
+        if (rd.style.display === 'none') {
+            rd.style.display = 'block';
+            const h = new Html5Qrcode(rid);
+            h.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
+                document.getElementById(tid).value = t.trim().toUpperCase();
+                fetchTE(t);
+                h.stop().then(() => { rd.style.display = 'none'; });
+            });
+        } else { rd.style.display = 'none'; }
+    }
 
     window.onload = () => { document.getElementById('targetDate').value = new Date().toISOString().split('T')[0]; };
 </script>
