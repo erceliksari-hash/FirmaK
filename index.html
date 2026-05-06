@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v144.2 - Akıllı Hesap Motoru</title>
+    <title>Üretim Takip Pro v144.3 - Stabil Geçiş</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -16,18 +16,20 @@
         }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1200px; }
+        
+        /* Sekme Stilleri */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; }
         .tab-btn { padding: 12px 18px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; }
-        .tab-btn.active { background: var(--accent); color: white; }
-        .tab-content { display: none; }
+        .tab-btn.active { background: var(--accent); color: white; border-bottom: 2px solid white; }
+        
+        /* İçerik Görünürlüğü */
+        .tab-content { display: none; width: 100%; }
         .tab-content.active { display: block; }
+
         .card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .grid-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 5px; text-transform: uppercase; }
         input { width: 100%; background: var(--input); border: 1px solid var(--border); padding: 12px; color: white; border-radius: 8px; outline: none; box-sizing: border-box; font-size: 14px; }
-        input:focus { border-color: var(--accent); }
-        /* Otomatik hesaplanan alanları belli et */
-        .auto-calc { color: #aff5b4 !important; font-weight: bold; }
         .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 14px; margin-bottom: 5px; }
         .btn-add { background: var(--accent); color: white; margin-top: 10px; }
         .btn-finish { background: var(--purple); color: white; margin-top: 15px; }
@@ -46,9 +48,9 @@
 
 <div class="container">
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('tab1', this)">🏠 ÜRETİM</button>
-        <button class="tab-btn" onclick="switchTab('tab-kayit', this)">🏷️ REHBER</button>
-        <button class="tab-btn" onclick="switchTab('tab-arsiv', this); renderArchive();">📜 ARŞİV</button>
+        <button id="btn-tab1" class="tab-btn active" onclick="switchTab('tab1')">🏠 ÜRETİM</button>
+        <button id="btn-tab-kayit" class="tab-btn" onclick="switchTab('tab-kayit')">🏷️ REHBER</button>
+        <button id="btn-tab-arsiv" class="tab-btn" onclick="switchTab('tab-arsiv')">📜 ARŞİV</button>
     </div>
 
     <div id="tab1" class="tab-content active">
@@ -118,7 +120,7 @@
 </div>
 
 <script>
-    // Firebase Yapılandırması (Kayıtlı bilgilerin)
+    // Firebase Config (Önceki bilgilerle aynı)
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -137,6 +139,45 @@
     const STORAGE_KEY = 'PRO_V144_DATA';
     let html5QrCode;
 
+    // SEKMELER ARASI GEÇİŞ (Düzeltildi)
+    function switchTab(tabId) {
+        // Tüm içerikleri gizle
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        // Tüm butonların aktifliğini kaldır
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Hedef içeriği göster
+        document.getElementById(tabId).classList.add('active');
+        // Hedef butonu boya
+        document.getElementById('btn-' + tabId).classList.add('active');
+
+        // Arşiv sekmesine geçildiyse listeyi yenile
+        if(tabId === 'tab-arsiv') renderArchive();
+    }
+
+    // AKILLI HESAP MOTORU
+    function smartEngine(lastChanged) {
+        let adet = parseFloat(document.getElementById('cAdet').value);
+        let te = parseFloat(document.getElementById('cTE').value);
+        let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
+        let dakika = parseFloat(document.getElementById('cRes').value);
+
+        if (lastChanged !== 'adet' && !isNaN(dakika) && !isNaN(te) && te !== 0) {
+            document.getElementById('cAdet').value = Math.round((dakika * verim) / te);
+        } 
+        else if (lastChanged === 'dakika' && !isNaN(adet) && !isNaN(te) && !isNaN(dakika) && dakika !== 0) {
+            document.getElementById('cPro').value = ((adet * te) / dakika).toFixed(2);
+        }
+        else if (!isNaN(adet) && !isNaN(te)) {
+            document.getElementById('cRes').value = ((adet * te) / verim).toFixed(2);
+        }
+    }
+
+    // FIREBASE VERİ ÇEKME
     rehberRef.on('value', (snapshot) => {
         const data = snapshot.val();
         globalRehber = [];
@@ -145,30 +186,6 @@
         }
         renderDbList();
     });
-
-    // --- YENİ AKILLI HESAP MOTORU ---
-    function smartEngine(lastChanged) {
-        let adet = parseFloat(document.getElementById('cAdet').value);
-        let te = parseFloat(document.getElementById('cTE').value);
-        let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
-        let dakika = parseFloat(document.getElementById('cRes').value);
-
-        // SENARYO 1: Dakika, TE ve Verim var -> ADET BUL
-        if (lastChanged !== 'adet' && !isNaN(dakika) && !isNaN(te) && te !== 0) {
-            let hesapAdet = (dakika * verim) / te;
-            document.getElementById('cAdet').value = Math.round(hesapAdet);
-        } 
-        // SENARYO 2: Adet, TE ve Dakika var -> VERİM BUL
-        else if (lastChanged === 'dakika' && !isNaN(adet) && !isNaN(te) && !isNaN(dakika) && dakika !== 0) {
-            let hesapVerim = (adet * te) / dakika;
-            document.getElementById('cPro').value = hesapVerim.toFixed(2);
-        }
-        // SENARYO 3: Adet, TE ve Verim var (Standart) -> DAKİKA BUL
-        else if (!isNaN(adet) && !isNaN(te)) {
-            let hesapDk = (adet * te) / verim;
-            document.getElementById('cRes').value = hesapDk.toFixed(2);
-        }
-    }
 
     function addRow() {
         const art = document.getElementById('cArt').value.toUpperCase();
@@ -188,21 +205,19 @@
 
         const tr = document.createElement('tr');
         tr.dataset.info = JSON.stringify(info);
-        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.refa}</td><td>${info.pro}</td><td style="color:var(--accent); font-weight:bold;">${info.res.replace('.',',')}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none; cursor:pointer;">❌</button></td>`;
+        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.refa}</td><td>${info.pro}</td><td style="color:var(--accent); font-weight:bold;">${info.res.replace('.',,')}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none; cursor:pointer;">❌</button></td>`;
         document.getElementById('dailyBody').appendChild(tr);
         calcSum();
         
         ['cArt','cAdet','cTE','cRefa','cRes','cRust','cGMK'].forEach(id => document.getElementById(id).value = "");
-        document.getElementById('cPro').value = "";
+        document.getElementById('cPro').value = "1.0";
     }
 
     function calcSum() {
         let total = 0, r = 0, g = 0;
         document.querySelectorAll("#dailyBody tr").forEach(tr => {
             const d = JSON.parse(tr.dataset.info);
-            total += parseFloat(d.res); 
-            r += parseFloat(d.rust); 
-            g += parseFloat(d.gmk);
+            total += parseFloat(d.res); r += parseFloat(d.rust); g += parseFloat(d.gmk);
         });
         document.getElementById('sumRes').innerText = total.toFixed(2).replace('.', ',');
         document.getElementById('sumRust').innerText = r;
@@ -223,10 +238,10 @@
         const te = parseFloat(document.getElementById('dbTE').value);
         const refa = document.getElementById('dbRefa').value.trim() || "-";
         const note = document.getElementById('dbNote').value.trim() || "-";
-        if(!art || isNaN(te)) return alert("Artikel ve TE zorunludur!");
+        if(!art || isNaN(te)) return alert("Eksik bilgi!");
         rehberRef.push({art, te, refa, note}).then(() => {
             ['dbArt','dbTE','dbRefa','dbNote'].forEach(id => document.getElementById(id).value = "");
-            alert("✅ Kaydedildi.");
+            alert("Kaydedildi.");
         });
     }
 
@@ -234,14 +249,8 @@
         const searchTerm = document.getElementById('dbSearch').value.toUpperCase();
         const filtered = globalRehber.filter(i => i.art.includes(searchTerm));
         document.getElementById('dbListBody').innerHTML = filtered.map((i) => `
-            <tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa || "-"}</td><td>${i.note || "-"}</td>
+            <tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td>${i.note}</td>
             <td><button onclick="deleteDb('${i.id}', '${i.art}')" style="background:none; border:none; color:var(--danger);">🗑️</button></td></tr>`).join('');
-    }
-
-    function switchTab(id, btn) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active'); btn.classList.add('active');
     }
 
     function toggleScanner(readerId, targetInputId, btnId) {
@@ -278,7 +287,7 @@
         arc.unshift(dayRecord);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
         document.getElementById('dailyBody').innerHTML = "";
-        calcSum(); renderArchive(); alert("Gün arşivlendi!");
+        calcSum(); renderArchive(); alert(" arşivlendi!");
     }
 
     function renderArchive() {
@@ -306,7 +315,6 @@
 
     window.onload = () => {
         document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
-        renderArchive();
     };
 </script>
 </body>
