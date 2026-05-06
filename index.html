@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v142.2 - Cloud & Search</title>
+    <title>Üretim Takip Pro v142.3 - Sıkı Denetim</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -88,13 +88,12 @@
             <div class="grid-inputs" style="margin-top: 10px;">
                 <div><label>ARTİKEL (Auftrag)</label><input type="text" id="dbArt"></div>
                 <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
-                <div style="grid-column: span 2;"><label>NOT</label><input type="text" id="dbNote" placeholder="Arama yapılabilecek bir not girin"></div>
+                <div style="grid-column: span 2;"><label>NOT (Opsiyonel Açıklama)</label><input type="text" id="dbNote" placeholder="Açıklama girin"></div>
             </div>
             <button class="btn btn-add" onclick="saveDb()">BULUTA KAYDET</button>
             
             <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
             
-            <!-- Arama Kutusu -->
             <div class="search-box">
                 <input type="text" id="dbSearch" placeholder="Rehberde ara (Artikel veya Not)..." oninput="renderDbList()">
             </div>
@@ -114,7 +113,6 @@
 </div>
 
 <script>
-    // --- FIREBASE KURULUMU ---
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -144,7 +142,6 @@
     const STORAGE_KEY = 'PRO_V141_DATA';
     let html5QrCode;
 
-    // --- TEMEL FONKSİYONLAR ---
     function engine() {
         const a = parseFloat(document.getElementById('cAdet').value) || 0;
         const t = parseFloat(document.getElementById('cTE').value) || 0;
@@ -178,26 +175,31 @@
         ['cArt','cAdet','cTE','cRes','cRust','cGMK', 'cPro'].forEach(id => document.getElementById(id).value = "");
     }
 
-    // --- REHBER YÖNETİMİ ---
     function saveDb() {
         const art = document.getElementById('dbArt').value.toUpperCase().trim();
-        const te = document.getElementById('dbTE').value;
-        const note = document.getElementById('dbNote').value.trim();
+        const teValue = document.getElementById('dbTE').value;
+        const note = document.getElementById('dbNote').value.trim() || "-";
         
-        if(!art || !te) return alert("Artikel ve TE zorunludur!");
-        
-        // Aynı Artikel Var mı Kontrolü
-        const existing = globalRehber.find(x => x.art === art);
-        if(existing) {
-            if(!confirm(`DİKKAT: "${art}" zaten rehberde kayıtlı. Tekrar eklemek istediğinize emin misiniz?`)) {
-                return;
-            }
+        if(!art || !teValue) return alert("Artikel ve TE zorunludur!");
+        const te = parseFloat(teValue);
+
+        // --- ENGELEME MANTIĞI ---
+        // Sadece Artikel ve TE aynı mı diye bakıyoruz. Not önemli değil.
+        const isDuplicate = globalRehber.find(x => 
+            x.art === art && 
+            parseFloat(x.te) === te
+        );
+
+        if(isDuplicate) {
+            alert(`🛑 HATA: "${art}" Artikel numarası ve "${te}" TE değeri ile zaten bir kayıt var. Aynı bilgiyi tekrar ekleyemezsiniz.`);
+            return; // Firebase'e göndermeyi durdurur.
         }
         
-        rehberRef.push({art, te, note: note || "-"}).then(() => {
+        rehberRef.push({art, te, note}).then(() => {
             document.getElementById('dbArt').value="";
             document.getElementById('dbTE').value="";
             document.getElementById('dbNote').value="";
+            alert("✅ Kaydedildi.");
         });
     }
 
@@ -231,7 +233,6 @@
         }
     }
 
-    // --- SEKME VE SCANNER ---
     function switchTab(id, btn) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
