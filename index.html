@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v142.0 - Cloud</title>
+    <title>Üretim Takip Pro v142.2 - Cloud & Search</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- Firebase SDK'ları -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     
@@ -29,18 +28,15 @@
         .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; font-size: 14px; margin-bottom: 5px; }
         .btn-add { background: var(--accent); color: white; margin-top: 10px; }
         .btn-finish { background: var(--purple); color: white; margin-top: 15px; }
-        .btn-backup { background: #30363d; color: #c9d1d9; border: 1px solid var(--border); }
-        .btn-restore { background: #238636; color: white; }
-        .btn-scan { background: #30363d; color: var(--accent); border: 1px solid var(--accent); padding: 10px; font-size: 12px; margin-bottom: 10px; }
         .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th { background: #21262d; padding: 10px; text-align: left; font-size: 11px; color: #8b949e; }
         td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
         .total-row { background: #1c2128; font-weight: bold; color: var(--accent); }
-        .archive-card { border: 1px solid var(--border); background: var(--card); border-radius: 12px; margin-bottom: 20px; }
-        .archive-header { background: #1c2128; padding: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px 12px 0 0; }
-        .btn-del { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .scanner-container { width: 100%; border-radius: 12px; overflow: hidden; display: none; margin-bottom: 15px; border: 1px solid var(--accent); }
+        .search-box { margin-bottom: 15px; position: relative; }
+        .search-box input { border: 1px solid var(--accent); padding-left: 35px; background: #1c2128; }
+        .search-box::before { content: "🔍"; position: absolute; left: 12px; top: 12px; font-size: 14px; z-index: 1; }
     </style>
 </head>
 <body>
@@ -52,10 +48,11 @@
         <button class="tab-btn" onclick="switchTab('tab-arsiv', this); renderArchive();">📜 ARŞİV</button>
     </div>
 
+    <!-- ÜRETİM SEKEMESİ -->
     <div id="tab1" class="tab-content active">
         <div class="card">
             <div id="readerUretim" class="scanner-container"></div>
-            <button class="btn btn-scan" id="scanBtnUretim" onclick="toggleScanner('readerUretim', 'cArt', 'scanBtnUretim')">📷 AUFTRAG BARKODU TARA</button>
+            <button class="btn btn-scan" id="scanBtnUretim" onclick="toggleScanner('readerUretim', 'cArt', 'scanBtnUretim')" style="background: #30363d; color: var(--accent); border: 1px solid var(--accent); padding: 10px; font-size: 12px; margin-bottom: 10px; width:100%; border-radius:8px;">📷 AUFTRAG BARKODU TARA</button>
             <div style="margin-bottom: 12px;"><label>Tarih</label><input type="date" id="targetDate"></div>
             <div class="grid-inputs">
                 <div style="grid-column: span 2;"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
@@ -81,27 +78,33 @@
             </div>
             <button class="btn btn-finish" onclick="finishDay()">GÜNÜ BİTİR VE ARŞİVLE</button>
         </div>
-
-        <div class="card">
-            <label>Veri Güvenliği (Yedekleme)</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="btn btn-backup" onclick="exportBackup()">📥 YEDEKLE (İndir)</button>
-                <button class="btn btn-restore" onclick="document.getElementById('importFile').click()">📤 GERİ YÜKLE</button>
-            </div>
-            <input type="file" id="importFile" style="display:none" onchange="importBackup(this)">
-        </div>
     </div>
 
+    <!-- REHBER SEKEMESİ -->
     <div id="tab-kayit" class="tab-content">
         <div class="card">
             <div id="readerRehber" class="scanner-container"></div>
-            <button class="btn btn-scan" id="scanBtnRehber" onclick="toggleScanner('readerRehber', 'dbArt', 'scanBtnRehber')">📷 REHBER İÇİN BARKOD TARA</button>
+            <button class="btn btn-scan" id="scanBtnRehber" onclick="toggleScanner('readerRehber', 'dbArt', 'scanBtnRehber')" style="background: #30363d; color: var(--accent); border: 1px solid var(--accent); padding: 10px; font-size: 12px; margin-bottom: 10px; width:100%; border-radius:8px;">📷 REHBER İÇİN BARKOD TARA</button>
             <div class="grid-inputs" style="margin-top: 10px;">
-                <div><label>ARTİKEL</label><input type="text" id="dbArt"></div>
+                <div><label>ARTİKEL (Auftrag)</label><input type="text" id="dbArt"></div>
                 <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
+                <div style="grid-column: span 2;"><label>NOT</label><input type="text" id="dbNote" placeholder="Arama yapılabilecek bir not girin"></div>
             </div>
             <button class="btn btn-add" onclick="saveDb()">BULUTA KAYDET</button>
-            <div class="table-wrapper" style="margin-top:15px;"><table id="dbTable"><thead><tr><th>ARTİKEL</th><th>TE</th><th>SİL</th></tr></thead><tbody id="dbListBody"></tbody></table></div>
+            
+            <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+            
+            <!-- Arama Kutusu -->
+            <div class="search-box">
+                <input type="text" id="dbSearch" placeholder="Rehberde ara (Artikel veya Not)..." oninput="renderDbList()">
+            </div>
+
+            <div class="table-wrapper">
+                <table id="dbTable">
+                    <thead><tr><th>ARTİKEL</th><th>TE</th><th>NOT</th><th>SİL</th></tr></thead>
+                    <tbody id="dbListBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
     
@@ -111,7 +114,7 @@
 </div>
 
 <script>
-    // --- FIREBASE YAPILANDIRMASI (Resimdeki Bilgiler) ---
+    // --- FIREBASE KURULUMU ---
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -126,13 +129,6 @@
     const db = firebase.database();
     const rehberRef = db.ref('rehber');
 
-    // Rehber Verilerini Dinle ve Çevrimdışı Çalışmayı Aktifleştir
-    db.ref('.info/connected').on('value', (snap) => {
-        if (snap.val() === true) console.log("Buluta Bağlandı");
-        else console.log("Bağlantı Yok - Çevrimdışı Mod");
-    });
-
-    // Bulut Rehberi Çek
     let globalRehber = [];
     rehberRef.on('value', (snapshot) => {
         const data = snapshot.val();
@@ -148,6 +144,7 @@
     const STORAGE_KEY = 'PRO_V141_DATA';
     let html5QrCode;
 
+    // --- TEMEL FONKSİYONLAR ---
     function engine() {
         const a = parseFloat(document.getElementById('cAdet').value) || 0;
         const t = parseFloat(document.getElementById('cTE').value) || 0;
@@ -181,29 +178,48 @@
         ['cArt','cAdet','cTE','cRes','cRust','cGMK', 'cPro'].forEach(id => document.getElementById(id).value = "");
     }
 
+    // --- REHBER YÖNETİMİ ---
     function saveDb() {
         const art = document.getElementById('dbArt').value.toUpperCase().trim();
         const te = document.getElementById('dbTE').value;
-        if(!art || !te) return alert("Bilgileri doldurun!");
+        const note = document.getElementById('dbNote').value.trim();
         
-        rehberRef.push({art, te}).then(() => {
+        if(!art || !te) return alert("Artikel ve TE zorunludur!");
+        
+        // Aynı Artikel Var mı Kontrolü
+        const existing = globalRehber.find(x => x.art === art);
+        if(existing) {
+            if(!confirm(`DİKKAT: "${art}" zaten rehberde kayıtlı. Tekrar eklemek istediğinize emin misiniz?`)) {
+                return;
+            }
+        }
+        
+        rehberRef.push({art, te, note: note || "-"}).then(() => {
             document.getElementById('dbArt').value="";
             document.getElementById('dbTE').value="";
-        }).catch(err => alert("Hata: " + err.message));
+            document.getElementById('dbNote').value="";
+        });
     }
 
-    function deleteDb(id) {
-        if(confirm("Bu parça buluttan silinsin mi?")) {
+    function deleteDb(id, artName) {
+        if(confirm(`"${artName}" parçası buluttan kalıcı olarak SİLİNECEK. Emin misiniz?`)) {
             db.ref('rehber/' + id).remove();
         }
     }
 
     function renderDbList() {
-        document.getElementById('dbListBody').innerHTML = globalRehber.map((i) => `
+        const searchTerm = document.getElementById('dbSearch').value.toUpperCase();
+        const filtered = globalRehber.filter(i => 
+            i.art.toUpperCase().includes(searchTerm) || 
+            (i.note && i.note.toUpperCase().includes(searchTerm))
+        );
+
+        document.getElementById('dbListBody').innerHTML = filtered.map((i) => `
             <tr>
                 <td>${i.art}</td>
                 <td>${i.te}</td>
-                <td><button onclick="deleteDb('${i.id}')" style="background:none; border:none;">🗑️</button></td>
+                <td style="color:#8b949e; font-size:12px;">${i.note || "-"}</td>
+                <td><button onclick="deleteDb('${i.id}', '${i.art}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:16px;">🗑️</button></td>
             </tr>`).join('');
     }
 
@@ -215,7 +231,13 @@
         }
     }
 
-    // --- Diğer Standart Fonksiyonlar (Aynen Korundu) ---
+    // --- SEKME VE SCANNER ---
+    function switchTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); btn.classList.add('active');
+    }
+
     function toggleScanner(readerId, targetInputId, btnId) {
         const readerDiv = document.getElementById(readerId);
         const btn = document.getElementById(btnId);
@@ -230,12 +252,14 @@
             });
         } else { stopScanner(readerDiv, btn); }
     }
+
     function stopScanner(div, btn) {
         if(html5QrCode) html5QrCode.stop().then(() => {
             div.style.display = 'none';
             btn.innerText = (btn.id === 'scanBtnUretim') ? "📷 AUFTRAG BARKODU TARA" : "📷 REHBER İÇİN BARKOD TARA";
         });
     }
+
     function calcSum() {
         let total = 0, r = 0, g = 0;
         document.querySelectorAll("#dailyBody tr").forEach(tr => {
@@ -246,6 +270,7 @@
         document.getElementById('sumRust').innerText = r;
         document.getElementById('sumGMK').innerText = g;
     }
+
     function finishDay() {
         const rows = document.querySelectorAll("#dailyBody tr");
         if(rows.length === 0) return alert("Liste boş!");
@@ -258,42 +283,27 @@
         document.getElementById('dailyBody').innerHTML = "";
         calcSum(); alert("Gün arşivlendi!"); renderArchive();
     }
+
     function renderArchive() {
         const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         const container = document.getElementById('archiveListContainer');
         container.innerHTML = arc.map((day, idx) => `
-            <div class="archive-card">
-                <div class="archive-header"><strong>📅 ${day.date}</strong><button class="btn-del" onclick="deleteArchive(${idx})">SİL</button></div>
+            <div class="card" style="border: 1px solid var(--border); padding:0; overflow:hidden;">
+                <div style="background: #1c2128; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <strong>📅 ${day.date}</strong>
+                    <button onclick="deleteArchive(${idx})" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">SİL</button>
+                </div>
                 <div class="table-wrapper">
-                    <table><thead><tr><th>AUFTRAG</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th></tr></thead>
-                    <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.pro}</td><td>${i.res.toString().replace('.',',')}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
+                    <table>
+                        <thead><tr><th>AUFTRAG</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th></tr></thead>
+                        <tbody>${day.items.map(i => `<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.pro}</td><td>${i.res.toString().replace('.',',')}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('')}</tbody>
                     </table>
                 </div>
             </div>`).join('') || '<div class="card">Arşiv henüz boş.</div>';
     }
+
     function deleteArchive(idx) { if(confirm("Silinsin mi?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx, 1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
-    function exportBackup() {
-        const data = { arsiv: JSON.parse(localStorage.getItem(STORAGE_KEY)) || [], rehber_yedek: globalRehber };
-        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `Yedek_${new Date().toLocaleDateString()}.json`; a.click();
-    }
-    function importBackup(input) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const data = JSON.parse(e.target.result);
-            if(confirm("Arşiv üzerine yazılsın mı?")) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.arsiv));
-                location.reload();
-            }
-        };
-        reader.readAsText(input.files[0]);
-    }
-    function switchTab(id, btn) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active'); btn.classList.add('active');
-    }
+
     window.onload = () => {
         document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
         renderArchive();
