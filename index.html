@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v162</title>
+    <title>Üretim Takip Pro v163</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -42,9 +42,10 @@
         .scanner-box { display:none; border-radius:12px; overflow:hidden; margin-bottom:10px; border:1px solid var(--accent); height: 250px; }
 
         /* Arşiv Özel Stili */
-        .archive-item { border-left: 4px solid var(--accent); transition: 0.2s; cursor: default; }
-        .archive-item:hover { background: #1c2128; }
-        .archive-details { display: block; font-size: 12px; color: #8b949e; margin-top: 8px; background: #0d1117; padding: 8px; border-radius: 6px; }
+        .archive-card { border-top: 4px solid var(--purple); }
+        .archive-table { font-size: 11px !important; width: 100%; margin-top: 10px; }
+        .archive-table th { padding: 5px; }
+        .archive-table td { padding: 5px; border-bottom: 1px solid #21262d; }
 
         /* Rechner Paneli */
         .calc-display-area { background: #000; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); text-align: right; }
@@ -112,21 +113,18 @@
         </div>
     </div>
 
-    <!-- 3. ARŞİV (YENİLENEN BÖLÜM) -->
+    <!-- 3. ARŞİV (GÜNCELLENEN KISIM) -->
     <div id="tab3" class="tab-content">
         <div class="card">
-            <label>ARŞİVDE ARA (TARİH / ARTİKEL)</label>
-            <input type="text" id="archiveSearch" placeholder="Gün.Ay.Yıl veya Ürün Adı..." oninput="renderArchive()">
-            
+            <label>ARŞİVDE ARA (TARİH VEYA ARTİKEL)</label>
+            <input type="text" id="archiveSearch" placeholder="09.05.2026 veya Artikel no..." oninput="renderArchive()">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
                 <button class="btn btn-backup" onclick="exportBackup()">📥 YEDEK AL</button>
                 <button class="btn btn-backup" onclick="document.getElementById('importFile').click()">📤 YEDEK YÜKLE</button>
                 <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
             </div>
         </div>
-        <div id="archiveListContainer" style="display: flex; flex-direction: column; gap: 10px;">
-            <!-- Arşiv öğeleri buraya gelecek -->
-        </div>
+        <div id="archiveListContainer"></div>
     </div>
 
     <!-- 4. RECHNER -->
@@ -172,6 +170,7 @@
 </div>
 
 <script>
+    // FIREBASE VE GLOBAL DEĞİŞKENLER (KORUNDU)
     const firebaseConfig = {
         apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
         authDomain: "firmak-c457f.firebaseapp.com",
@@ -195,7 +194,7 @@
         if(id === 'tab3') renderArchive();
     }
 
-    // --- RECHNER MANTIĞI ---
+    // --- RECHNER (KORUNDU) ---
     let currentExp = "";
     function calcNum(n) { currentExp += n; updateDisplay(); calcSolve(); }
     function calcOp(op) { currentExp += " " + op + " "; updateDisplay(); }
@@ -235,91 +234,7 @@
         } catch (e) { }
     }
 
-    // --- ARŞİV SEGMENTİ (GÜNCELLENEN KISIM) ---
-    function renderArchive() {
-        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const search = document.getElementById('archiveSearch').value.toLowerCase();
-        const container = document.getElementById('archiveListContainer');
-        container.innerHTML = "";
-
-        if (arc.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:20px; color:#8b949e;">Henüz kayıtlı veri yok.</div>';
-            return;
-        }
-
-        arc.filter(d => d.date.includes(search) || d.items.some(i => i.art.toLowerCase().includes(search))).forEach((day) => {
-            const card = document.createElement('div');
-            card.className = "card archive-item";
-            
-            // Günlük özet ve sil butonu
-            let itemsHtml = day.items.map(i => `• ${i.art}: ${i.adet} Adet (${i.res} dk)`).join('<br>');
-            
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
-                    <div>
-                        <div style="font-size:16px; font-weight:bold; color:var(--accent);">📅 ${day.date}</div>
-                        <div style="font-size:14px; color:var(--success); font-weight:bold; margin-top:4px;">Toplam: ${day.totalDk} dk</div>
-                    </div>
-                    <button onclick="deleteArchiveDay(${day.id})" style="background:var(--danger); color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px;">SİL</button>
-                </div>
-                <div class="archive-details">
-                    <strong>İçerik Detayları:</strong><br>
-                    ${itemsHtml}
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
-
-    function deleteArchiveDay(id) {
-        if(confirm("Bu günü arşivden tamamen silmek istiyor musunuz?")) {
-            let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            arc = arc.filter(item => item.id !== id);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
-            renderArchive();
-        }
-    }
-
-    function exportBackup() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if(!data || data === "[]") return alert("Yedeklenecek veri yok.");
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
-    }
-
-    function importBackup(event) {
-        const file = event.target.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const json = JSON.parse(e.target.result);
-                if(confirm("Mevcut veriler silinip yedek yüklenecektir. Emin misiniz?")) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(json));
-                    renderArchive(); alert("Yedek başarıyla yüklendi.");
-                }
-            } catch(e) { alert("Geçersiz yedek dosyası!"); }
-        };
-        reader.readAsText(file);
-    }
-
-    // --- ÜRETİM VE DİĞERLERİ ---
-    function finishDay() {
-        const rows = document.querySelectorAll("#dailyBody tr"); if(rows.length === 0) return;
-        const record = { 
-            date: (document.getElementById('targetDate').value).split("-").reverse().join("."), 
-            items: Array.from(rows).map(r => JSON.parse(r.dataset.info)), 
-            totalDk: document.getElementById('grandTotalLabel').innerText, 
-            id: Date.now() 
-        };
-        let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        archive.unshift(record);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
-        document.getElementById('dailyBody').innerHTML = ""; 
-        calcSum();
-        alert("Gün başarıyla arşivlendi!");
-    }
-
+    // --- ÜRETİM VE REHBER (KORUNDU) ---
     function smartEngine(source) {
         let adet = parseFloat(document.getElementById('cAdet').value) || 0;
         let te = parseFloat(document.getElementById('cTE').value) || 0;
@@ -355,6 +270,115 @@
         document.getElementById('grandTotalLabel').innerText = total.toFixed(2);
         const diff = target - total; const dl = document.getElementById('diffLabel');
         dl.innerText = `KALAN: ${diff.toFixed(2)} dk`; dl.style.color = diff < 0 ? '#f85149' : '#aff5b4';
+    }
+
+    // --- ARŞİV (YENİLENEN FULL DETAY MANTIĞI) ---
+    function finishDay() {
+        const rows = document.querySelectorAll("#dailyBody tr");
+        if(rows.length === 0) return alert("Arşivlenecek veri yok!");
+        
+        const record = { 
+            date: (document.getElementById('targetDate').value).split("-").reverse().join("."), 
+            items: Array.from(rows).map(r => JSON.parse(r.dataset.info)), 
+            totalDk: document.getElementById('grandTotalLabel').innerText, 
+            id: Date.now() 
+        };
+
+        let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        archive.unshift(record);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
+        document.getElementById('dailyBody').innerHTML = ""; 
+        calcSum();
+        alert("Gün tüm detaylarıyla arşivlendi!");
+    }
+
+    function renderArchive() {
+        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const search = document.getElementById('archiveSearch').value.toLowerCase();
+        const container = document.getElementById('archiveListContainer');
+        container.innerHTML = "";
+
+        arc.filter(d => d.date.includes(search) || d.items.some(i => i.art.toLowerCase().includes(search))).forEach((day) => {
+            const card = document.createElement('div');
+            card.className = "card archive-card";
+            
+            let tableRows = day.items.map((i, idx) => `
+                <tr>
+                    <td>${i.art}</td>
+                    <td>${i.adet}</td>
+                    <td>${i.verim}</td>
+                    <td>${i.res}</td>
+                    <td>${i.rust}</td>
+                    <td>${i.gmk}</td>
+                    <td><button onclick="deleteArchiveRow(${day.id}, ${i.id})" style="color:red; background:none; border:none; font-size:14px;">×</button></td>
+                </tr>
+            `).join('');
+
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:var(--accent);">📅 ${day.date}</b>
+                    <b style="color:var(--success);">TOPLAM: ${day.totalDk} dk</b>
+                    <button onclick="deleteFullDay(${day.id})" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px;">GÜNÜ SİL</button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="archive-table">
+                        <thead>
+                            <tr><th>ART</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function deleteArchiveRow(dayId, rowId) {
+        if(!confirm("Bu satırı arşivden silmek istiyor musunuz?")) return;
+        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let dayIndex = arc.findIndex(d => d.id === dayId);
+        if(dayIndex > -1) {
+            arc[dayIndex].items = arc[dayIndex].items.filter(i => i.id !== rowId);
+            // Toplam dakikayı yeniden hesapla
+            let newTotal = 0;
+            arc[dayIndex].items.forEach(i => {
+                newTotal += (parseFloat(i.res)||0) + (parseFloat(i.rust)||0) + (parseFloat(i.gmk)||0);
+            });
+            arc[dayIndex].totalDk = newTotal.toFixed(2);
+            
+            if(arc[dayIndex].items.length === 0) arc.splice(dayIndex, 1);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+            renderArchive();
+        }
+    }
+
+    function deleteFullDay(dayId) {
+        if(!confirm("Tüm günü arşivden silmek istediğinize emin misiniz?")) return;
+        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        arc = arc.filter(d => d.id !== dayId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+        renderArchive();
+    }
+
+    function exportBackup() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if(!data || data === "[]") return alert("Yedeklenecek veri yok.");
+        const blob = new Blob([data], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const json = JSON.parse(e.target.result);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(json));
+                renderArchive(); alert("Yedek yüklendi!");
+            } catch(e) { alert("Hatalı dosya!"); }
+        };
+        reader.readAsText(file);
     }
 
     function saveDb() { 
