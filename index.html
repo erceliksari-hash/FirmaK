@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v161</title>
+    <title>Üretim Takip Pro v162</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -40,6 +40,11 @@
         td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
         
         .scanner-box { display:none; border-radius:12px; overflow:hidden; margin-bottom:10px; border:1px solid var(--accent); height: 250px; }
+
+        /* Arşiv Özel Stili */
+        .archive-item { border-left: 4px solid var(--accent); transition: 0.2s; cursor: default; }
+        .archive-item:hover { background: #1c2128; }
+        .archive-details { display: block; font-size: 12px; color: #8b949e; margin-top: 8px; background: #0d1117; padding: 8px; border-radius: 6px; }
 
         /* Rechner Paneli */
         .calc-display-area { background: #000; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); text-align: right; }
@@ -107,22 +112,24 @@
         </div>
     </div>
 
-    <!-- 3. ARŞİV -->
+    <!-- 3. ARŞİV (YENİLENEN BÖLÜM) -->
     <div id="tab3" class="tab-content">
         <div class="card">
             <label>ARŞİVDE ARA (TARİH / ARTİKEL)</label>
-            <input type="text" id="archiveSearch" placeholder="Örn: 05.2024" oninput="renderArchive()">
+            <input type="text" id="archiveSearch" placeholder="Gün.Ay.Yıl veya Ürün Adı..." oninput="renderArchive()">
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <button class="btn btn-backup" onclick="exportBackup()">📥 YEDEK AL (JSON)</button>
+                <button class="btn btn-backup" onclick="exportBackup()">📥 YEDEK AL</button>
                 <button class="btn btn-backup" onclick="document.getElementById('importFile').click()">📤 YEDEK YÜKLE</button>
                 <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
             </div>
         </div>
-        <div id="archiveListContainer"></div>
+        <div id="archiveListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Arşiv öğeleri buraya gelecek -->
+        </div>
     </div>
 
-    <!-- 4. RECHNER (GECE VARDİYASI DESTEKLİ) -->
+    <!-- 4. RECHNER -->
     <div id="tab4" class="tab-content">
         <div class="card">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
@@ -135,12 +142,10 @@
                     <div id="remainingTimeLabel" style="font-size: 20px; font-weight: bold; margin-top: 5px; color: #aff5b4;">--:--</div>
                 </div>
             </div>
-
             <div class="calc-display-area">
                 <div id="calc-exp"></div>
                 <div id="calc-res">0</div>
             </div>
-            
             <div class="calc-container">
                 <button class="calc-btn clr-btn" onclick="calcClear()">C</button>
                 <button class="calc-btn back-btn" onclick="calcBack()">⌫</button>
@@ -190,7 +195,7 @@
         if(id === 'tab3') renderArchive();
     }
 
-    // --- RECHNER (GECE VARDİYASI MANTIĞI) ---
+    // --- RECHNER MANTIĞI ---
     let currentExp = "";
     function calcNum(n) { currentExp += n; updateDisplay(); calcSolve(); }
     function calcOp(op) { currentExp += " " + op + " "; updateDisplay(); }
@@ -202,50 +207,27 @@
         try {
             let targetVal = document.getElementById('targetEndTime').value;
             if (!targetVal) return;
-            
             if (currentExp.includes(":")) {
                 let parts = currentExp.split(/(\+|-)/);
                 let baseTime = parts[0].trim();
                 let [h, m] = baseTime.split(":").map(Number);
-                
-                // Başlangıç saati objesi
                 let startD = new Date(2000, 0, 1, h, m, 0);
-
-                // İşlemleri yap
                 for (let i = 1; i < parts.length; i += 2) {
                     let op = parts[i]?.trim();
                     let val = parseFloat(parts[i+1]?.trim() || 0);
                     if (op === "+") startD.setMinutes(startD.getMinutes() + val);
                     if (op === "-") startD.setMinutes(startD.getMinutes() - val);
                 }
-
-                // Mevcut sonuç saati
-                let resH = startD.getHours();
-                let resM = startD.getMinutes();
+                let resH = startD.getHours(), resM = startD.getMinutes();
                 let nowTimeStr = resH.toString().padStart(2, '0') + ":" + resM.toString().padStart(2, '0');
                 document.getElementById('calc-res').innerText = nowTimeStr;
-
-                // Hedef saat objesi
                 let [tH, tM] = targetVal.split(":").map(Number);
                 let targetD = new Date(2000, 0, 1, tH, tM, 0);
-
-                // GECE VARDİYASI KONTROLÜ: 
-                // Eğer hedef saat başlangıçtan küçükse (örn 05:00 < 21:00), hedef ertesi gündür.
-                if (targetD < startD) {
-                    targetD.setDate(targetD.getDate() + 1);
-                }
-
-                let diffMs = targetD - startD;
-                let diffMin = Math.floor(diffMs / 60000);
-
+                if (targetD < startD) targetD.setDate(targetD.getDate() + 1);
+                let diffMin = Math.floor((targetD - startD) / 60000);
                 const label = document.getElementById('remainingTimeLabel');
-                if (diffMin > 0) {
-                    label.innerText = `${Math.floor(diffMin / 60)}s ${diffMin % 60}dk`;
-                    label.style.color = "#aff5b4";
-                } else {
-                    label.innerText = diffMin === 0 ? "TAMAM" : `${Math.abs(diffMin)} dk AŞTI`;
-                    label.style.color = diffMin === 0 ? "#58a6ff" : "#f85149";
-                }
+                if (diffMin > 0) { label.innerText = `${Math.floor(diffMin / 60)}s ${diffMin % 60}dk`; label.style.color = "#aff5b4"; }
+                else { label.innerText = diffMin === 0 ? "TAMAM" : `${Math.abs(diffMin)} dk AŞTI`; label.style.color = diffMin === 0 ? "#58a6ff" : "#f85149"; }
             } else if(currentExp !== "") {
                 let res = eval(currentExp.replace(/×/g, '*').replace(/÷/g, '/'));
                 document.getElementById('calc-res').innerText = Number.isInteger(res) ? res : res.toFixed(2);
@@ -253,7 +235,91 @@
         } catch (e) { }
     }
 
-    // --- ÜRETİM ---
+    // --- ARŞİV SEGMENTİ (GÜNCELLENEN KISIM) ---
+    function renderArchive() {
+        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        const search = document.getElementById('archiveSearch').value.toLowerCase();
+        const container = document.getElementById('archiveListContainer');
+        container.innerHTML = "";
+
+        if (arc.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#8b949e;">Henüz kayıtlı veri yok.</div>';
+            return;
+        }
+
+        arc.filter(d => d.date.includes(search) || d.items.some(i => i.art.toLowerCase().includes(search))).forEach((day) => {
+            const card = document.createElement('div');
+            card.className = "card archive-item";
+            
+            // Günlük özet ve sil butonu
+            let itemsHtml = day.items.map(i => `• ${i.art}: ${i.adet} Adet (${i.res} dk)`).join('<br>');
+            
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                    <div>
+                        <div style="font-size:16px; font-weight:bold; color:var(--accent);">📅 ${day.date}</div>
+                        <div style="font-size:14px; color:var(--success); font-weight:bold; margin-top:4px;">Toplam: ${day.totalDk} dk</div>
+                    </div>
+                    <button onclick="deleteArchiveDay(${day.id})" style="background:var(--danger); color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px;">SİL</button>
+                </div>
+                <div class="archive-details">
+                    <strong>İçerik Detayları:</strong><br>
+                    ${itemsHtml}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function deleteArchiveDay(id) {
+        if(confirm("Bu günü arşivden tamamen silmek istiyor musunuz?")) {
+            let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            arc = arc.filter(item => item.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+            renderArchive();
+        }
+    }
+
+    function exportBackup() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if(!data || data === "[]") return alert("Yedeklenecek veri yok.");
+        const blob = new Blob([data], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const json = JSON.parse(e.target.result);
+                if(confirm("Mevcut veriler silinip yedek yüklenecektir. Emin misiniz?")) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(json));
+                    renderArchive(); alert("Yedek başarıyla yüklendi.");
+                }
+            } catch(e) { alert("Geçersiz yedek dosyası!"); }
+        };
+        reader.readAsText(file);
+    }
+
+    // --- ÜRETİM VE DİĞERLERİ ---
+    function finishDay() {
+        const rows = document.querySelectorAll("#dailyBody tr"); if(rows.length === 0) return;
+        const record = { 
+            date: (document.getElementById('targetDate').value).split("-").reverse().join("."), 
+            items: Array.from(rows).map(r => JSON.parse(r.dataset.info)), 
+            totalDk: document.getElementById('grandTotalLabel').innerText, 
+            id: Date.now() 
+        };
+        let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        archive.unshift(record);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
+        document.getElementById('dailyBody').innerHTML = ""; 
+        calcSum();
+        alert("Gün başarıyla arşivlendi!");
+    }
+
     function smartEngine(source) {
         let adet = parseFloat(document.getElementById('cAdet').value) || 0;
         let te = parseFloat(document.getElementById('cTE').value) || 0;
@@ -291,56 +357,6 @@
         dl.innerText = `KALAN: ${diff.toFixed(2)} dk`; dl.style.color = diff < 0 ? '#f85149' : '#aff5b4';
     }
 
-    // --- ARŞİV SİSTEMİ ---
-    function finishDay() {
-        const rows = document.querySelectorAll("#dailyBody tr"); if(rows.length === 0) return;
-        const record = { date: (document.getElementById('targetDate').value).split("-").reverse().join("."), items: Array.from(rows).map(r => JSON.parse(r.dataset.info)), totalDk: document.getElementById('grandTotalLabel').innerText, id: Date.now() };
-        let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; archive.unshift(record);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(archive)); document.getElementById('dailyBody').innerHTML = ""; calcSum(); alert("Arşivlendi!");
-    }
-
-    function renderArchive() {
-        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const search = document.getElementById('archiveSearch').value.toLowerCase();
-        const container = document.getElementById('archiveListContainer');
-        container.innerHTML = "";
-        arc.filter(d => d.date.includes(search) || d.items.some(i => i.art.toLowerCase().includes(search))).forEach((day, idx) => {
-            const card = document.createElement('div'); card.className = "card";
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b>📅 ${day.date} - ${day.totalDk} dk</b>
-                    <button onclick="deleteArchiveDay(${idx})" style="color:var(--danger); background:none; border:none; font-weight:bold;">SİL</button>
-                </div>
-                <div style="font-size:11px; color:#8b949e; margin-top:5px;">${day.items.map(i => i.art + " (" + i.adet + ")").join(", ")}</div>`;
-            container.appendChild(card);
-        });
-    }
-
-    function deleteArchiveDay(idx) { if(confirm("Silmek istiyor musun?")) { let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)); arc.splice(idx,1); localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive(); } }
-
-    function exportBackup() {
-        const data = localStorage.getItem(STORAGE_KEY); if(!data) return alert("Yedeklenecek veri yok.");
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
-    }
-
-    function importBackup(event) {
-        const file = event.target.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const json = JSON.parse(e.target.result);
-                if(confirm("Yüklemek istediğine emin misin?")) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(json));
-                    renderArchive(); alert("Yükleme başarılı.");
-                }
-            } catch(e) { alert("Geçersiz dosya."); }
-        };
-        reader.readAsText(file);
-    }
-
-    // --- REHBER ---
     function saveDb() { 
         const art = document.getElementById('dbArt').value.toUpperCase();
         const te = parseFloat(document.getElementById('dbTE').value);
@@ -359,7 +375,10 @@
         });
     }
 
-    window.onload = () => { document.getElementById('targetDate').value = new Date().toISOString().split('T')[0]; };
+    window.onload = () => { 
+        document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
+        renderArchive();
+    };
 </script>
 </body>
 </html>
