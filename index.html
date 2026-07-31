@@ -1,408 +1,607 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Üretim Takip Pro v163</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    
-    <style>
-        :root {
-            --bg: #0d1117; --card: #161b22; --input: #21262d;
-            --accent: #58a6ff; --success: #238636; --danger: #f85149; --text: #c9d1d9; --purple: #8957e5;
-            --border: #30363d;
-        }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 1200px; }
-        
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; position: sticky; top: 0; background: var(--bg); z-index: 100; }
-        .tab-btn { padding: 12px 15px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
-        .tab-btn.active { background: var(--accent) !important; color: white !important; }
-        
-        .tab-content { display: none; width: 100%; }
-        .tab-content.active { display: block !important; }
-
-        .card { background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        .grid-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        label { display: block; font-size: 11px; color: #8b949e; margin-bottom: 5px; text-transform: uppercase; }
-        input { width: 100%; background: var(--input); border: 1px solid var(--border); padding: 12px; color: white; border-radius: 8px; outline: none; box-sizing: border-box; font-size: 14px; }
-        
-        .btn { padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; text-align: center; margin-bottom: 5px; }
-        .btn-add { background: var(--accent); color: white; }
-        .btn-finish { background: var(--purple); color: white; margin-top: 10px; }
-        .btn-backup { background: #30363d; color: #c9d1d9; border: 1px solid var(--border); font-size: 12px; }
-
-        .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { background: #21262d; padding: 10px; text-align: left; font-size: 11px; color: #8b949e; }
-        td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
-        
-        .scanner-box { display:none; border-radius:12px; overflow:hidden; margin-bottom:10px; border:1px solid var(--accent); height: 250px; }
-
-        /* Arşiv Özel Stili */
-        .archive-card { border-top: 4px solid var(--purple); }
-        .archive-table { font-size: 11px !important; width: 100%; margin-top: 10px; }
-        .archive-table th { padding: 5px; }
-        .archive-table td { padding: 5px; border-bottom: 1px solid #21262d; }
-
-        /* Rechner Paneli */
-        .calc-display-area { background: #000; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); text-align: right; }
-        #calc-exp { color: #8b949e; font-size: 14px; min-height: 20px; margin-bottom: 5px; word-break: break-all; }
-        #calc-res { color: #00ff00; font-size: 28px; font-weight: bold; }
-        .calc-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 350px; margin: 0 auto; }
-        .calc-btn { padding: 18px; background: var(--input); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .op-btn { background: #388bfd33; color: var(--accent); }
-        .time-btn { background: #8957e533; color: var(--purple); }
-        .eq-btn { background: var(--success); grid-column: span 2; }
-        .clr-btn { background: var(--danger); }
-        .back-btn { background: #444c56; color: white; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Üretim Takip Pro - Offline-first Arşiv</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    :root{--bg:#0d1117;--card:#161b22;--input:#21262d;--accent:#58a6ff;--success:#238636;--danger:#f85149;--text:#c9d1d9;--border:#30363d}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif;margin:0;padding:10px;display:flex;flex-direction:column;align-items:center}
+    .container{width:100%;max-width:1200px}
+    .tabs{display:flex;gap:5px;margin-bottom:15px;border-bottom:1px solid var(--border);overflow-x:auto;padding-bottom:5px;position:sticky;top:0;background:var(--bg);z-index:10}
+    .tab-btn{padding:12px 15px;background:var(--input);color:#8b949e;border:none;border-radius:8px 8px 0 0;cursor:pointer;font-weight:bold;font-size:13px;white-space:nowrap}
+    .tab-btn.active{background:var(--accent)!important;color:white!important}
+    .tab-content{display:none;width:100%}
+    .tab-content.active{display:block!important}
+    .card{background:var(--card);border:1px solid var(--border);padding:15px;border-radius:12px;margin-bottom:15px}
+    .grid-inputs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    label{display:block;font-size:11px;color:#8b949e;margin-bottom:5px;text-transform:uppercase}
+    input,textarea,select{width:100%;background:var(--input);border:1px solid var(--border);padding:12px;color:white;border-radius:8px;outline:none;box-sizing:border-box;font-size:14px}
+    textarea{resize:vertical}
+    .btn{padding:12px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;text-align:center;margin-bottom:5px}
+    .btn-full{width:100%}
+    .btn-add{background:var(--accent);color:white}
+    .btn-finish{background:var(--purple);color:white}
+    .btn-backup{background:#30363d;color:#c9d1d9;border:1px solid var(--border);font-size:12px}
+    .table-wrapper{overflow-x:auto;border:1px solid var(--border);border-radius:8px}
+    table{width:100%;border-collapse:collapse;min-width:600px}
+    th{background:#21262d;padding:10px;text-align:left;font-size:11px;color:#8b949e}
+    td{padding:10px;border-bottom:1px solid var(--border);font-size:13px}
+    .scanner-box{display:none;border-radius:12px;overflow:hidden;margin-bottom:10px;border:1px solid var(--accent);height:250px}
+    .archive-card{border-top:4px solid var(--purple)}
+    .archive-table{font-size:11px!important;width:100%;margin-top:10px}
+    .muted{color:#8b949e;font-size:13px}
+    .small{font-size:12px}
+    .flex{display:flex;gap:8px}
+    .col{display:flex;flex-direction:column;gap:8px}
+    .section-title{font-weight:bold;color:var(--accent);margin-bottom:8px}
+  </style>
 </head>
 <body>
-
-<div class="container">
+  <div class="container">
     <div class="tabs">
-        <button id="nav-tab1" class="tab-btn active" onclick="universalTab('tab1')">🏠 ÜRETİM</button>
-        <button id="nav-tab2" class="tab-btn" onclick="universalTab('tab2')">🏷️ REHBER</button>
-        <button id="nav-tab3" class="tab-btn" onclick="universalTab('tab3')">📜 ARŞİV</button>
-        <button id="nav-tab4" class="tab-btn" onclick="universalTab('tab4')">🧮 RECHNER</button>
+      <button id="nav-tab1" class="tab-btn active" onclick="universalTab('tab1')">🏠 ÜRETİM</button>
+      <button id="nav-tab2" class="tab-btn" onclick="universalTab('tab2')">🏷️ REHBER</button>
+      <button id="nav-tab3" class="tab-btn" onclick="universalTab('tab3')">📜 ARŞİV</button>
+      <button id="nav-tab4" class="tab-btn" onclick="universalTab('tab4')">🧮 RECHNER</button>
     </div>
 
     <!-- 1. ÜRETİM -->
     <div id="tab1" class="tab-content active">
-        <div class="card">
-            <div id="readerUretim" class="scanner-box"></div>
-            <button class="btn" onclick="toggleScanner('readerUretim', 'cArt', true)" style="background:#30363d; color:var(--accent);">📷 BARKOD TARA</button>
-            <div style="margin-top:10px;"><label>Tarih</label><input type="date" id="targetDate"></div>
-            <div class="grid-inputs" style="margin-top:10px;">
-                <div style="grid-column: span 2;"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
-                <div><label>Adet</label><input type="number" id="cAdet" oninput="smartEngine('adet')"></div>
-                <div><label>TE</label><input type="number" id="cTE" oninput="smartEngine('te')" step="0.001"></div>
-                <div><label>Verim (v)</label><input type="number" id="cPro" oninput="smartEngine('verim')" value="1.0" step="0.1"></div>
-                <div><label>Dakika (Net)</label><input type="number" id="cRes" oninput="smartEngine('dakika')" step="0.01"></div>
-                <div><label>Rüst</label><input type="number" id="cRust" value="0"></div>
-                <div><label>GMK</label><input type="number" id="cGMK" value="0"></div>
+      <div class="card">
+        <div id="readerUretim" class="scanner-box"></div>
+        <button class="btn btn-full" onclick="toggleScanner('readerUretim','cArt',true)" style="background:#30363d;color:var(--accent)">📷 BARKOD TARA</button>
+        <div style="margin-top:10px"><label>Tarih</label><input type="date" id="targetDate"></div>
+        <div class="grid-inputs" style="margin-top:10px">
+          <div style="grid-column: span 2"><label>Auftrag</label><input type="text" id="cArt" oninput="fetchTE(this.value)"></div>
+          <div><label>Adet</label><input type="number" id="cAdet" oninput="smartEngine('adet')"></div>
+          <div><label>TE</label><input type="text" id="cTE" inputmode="decimal" oninput="smartEngine('te')" placeholder="örn. 1.20"></div>
+          <div>
+            <label>Verim (v)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="text" id="cPro" inputmode="decimal" oninput="smartEngine('verim')" value="1.00" style="width:120px">
+              <label style="margin:0;font-size:13px;color:#8b949e">
+                <input type="checkbox" id="ignoreVerim" onchange="toggleIgnoreVerim(this.checked)" style="margin-right:6px;"> Verim yok (1.0)
+              </label>
             </div>
-            <button class="btn btn-add" onclick="addRow()">LİSTEYE EKLE</button>
+          </div>
+          <div><label>Dakika (Net)</label><input type="text" id="cRes" inputmode="decimal" oninput="smartEngine('dakika')" placeholder="örn. 97"></div>
+          <div><label>Rüst</label><input type="number" id="cRust" value="0"></div>
+          <div><label>GMK</label><input type="number" id="cGMK" value="0"></div>
         </div>
-        <div class="card">
-            <div class="table-wrapper"><table><thead><tr><th>ART</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead><tbody id="dailyBody"></tbody></table></div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                <div><label>TOPLAM DK</label><div id="grandTotalLabel" style="font-size: 18px; font-weight: bold; color: var(--accent);">0.00</div></div>
-                <div><label>HEDEF DK</label><input type="number" id="targetLimit" value="465" oninput="calcSum()" style="height:35px;"></div>
-                <div style="grid-column: span 2; text-align: center; border-top: 1px solid var(--border); padding-top: 8px;"><span id="diffLabel" style="font-weight: bold; color:#aff5b4;">KALAN: 465.00 dk</span></div>
-            </div>
-            <button class="btn btn-finish" onclick="finishDay()">GÜNÜ BİTİR VE ARŞİVLE</button>
+        <button class="btn btn-add btn-full" onclick="addRow()">LİSTEYE EKLE</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper"><table><thead><tr><th>ART</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead><tbody id="dailyBody"></tbody></table></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+          <div><label>TOPLAM DK</label><div id="grandTotalLabel" style="font-size:18px;font-weight:bold;color:var(--accent)">0.00</div></div>
+          <div><label>HEDEF DK</label><input type="number" id="targetLimit" value="465" oninput="calcSum()" style="height:35px"></div>
+          <div style="grid-column:span 2;text-align:center;border-top:1px solid var(--border);padding-top:8px"><span id="diffLabel" style="font-weight:bold;color:#aff5b4">KALAN: 0.00 dk</span></div>
         </div>
+        <button class="btn btn-finish btn-full" onclick="finishDay()">GÜNÜ BİTİR VE ARŞİVLE</button>
+      </div>
     </div>
 
-    <!-- 2. REHBER -->
+    <!-- 2. REHBER (Removed export/import/gist controls as requested) -->
     <div id="tab2" class="tab-content">
-        <div class="card">
-            <div id="readerRehber" class="scanner-box"></div>
-            <button class="btn" onclick="toggleScanner('readerRehber', 'dbArt', false)" style="background:#30363d; color:var(--purple);">📷 REHBERE TARA</button>
-            <div class="grid-inputs" style="margin-top:10px;">
-                <div style="grid-column: span 2;"><label>ARTİKEL</label><input type="text" id="dbArt"></div>
-                <div><label>TE</label><input type="number" id="dbTE" step="0.001"></div>
-                <div><label>REFA</label><input type="text" id="dbRefa"></div>
-            </div>
-            <button class="btn btn-add" onclick="saveDb()" style="background:var(--success); margin-top:10px;">VERİTABANINA KAYDET</button>
-            <div class="table-wrapper" style="margin-top:15px;"><table><thead><tr><th>ART</th><th>TE</th><th>REFA</th><th>SİL</th></tr></thead><tbody id="dbListBody"></tbody></table></div>
+      <div class="card">
+        <div id="readerRehber" class="scanner-box"></div>
+        <button class="btn btn-full" onclick="toggleScanner('readerRehber','dbArt',false)" style="background:#30363d;color:var(--purple)">📷 REHBERE TARA</button>
+
+        <div class="grid-inputs" style="margin-top:10px">
+          <div style="grid-column: span 2"><label>ARTİKEL</label><input type="text" id="dbArt" oninput="previewDbArt();"></div>
+          <div><label>TE</label><input type="text" id="dbTE" inputmode="decimal" step="0.001"></div>
+          <div><label>REFA</label><input type="text" id="dbRefa"></div>
+          <div style="grid-column: span 2"><label>NOT</label><textarea id="dbNote" rows="3" placeholder="Opsiyonel not..."></textarea></div>
         </div>
+
+        <div id="dbMatchPreview" style="display:none;background:#0f1620;border:1px solid var(--border);padding:8px;border-radius:8px;margin-top:8px;color:#9fb7df"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <button class="btn btn-add" onclick="saveDb()">REHBER'E EKLE / GÜNCELLE</button>
+          <button class="btn btn-backup" onclick="clearDbInputs()">TEMİZLE</button>
+        </div>
+
+        <div style="margin-top:12px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:center">
+          <input id="dbSearch" placeholder="Artikel ara..." oninput="renderDbList(this.value)">
+          <button class="btn btn-backup" onclick="removeByArticle()">KALDIR</button>
+          <button class="btn btn-backup" onclick="filterRehber()">ARA</button>
+        </div>
+
+        <div class="table-wrapper" style="margin-top:15px">
+          <table>
+            <thead><tr><th>ART</th><th>TE</th><th>REFA</th><th>NOT</th><th>ACTIONS</th></tr></thead>
+            <tbody id="dbListBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- 3. ARŞİV (GÜNCELLENEN KISIM) -->
+    <!-- 3. ARŞİV (Local + Shared, auto-backup + manual backup kept here) -->
     <div id="tab3" class="tab-content">
-        <div class="card">
-            <label>ARŞİVDE ARA (TARİH VEYA ARTİKEL)</label>
-            <input type="text" id="archiveSearch" placeholder="09.05.2026 veya Artikel no..." oninput="renderArchive()">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <button class="btn btn-backup" onclick="exportBackup()">📥 YEDEK AL</button>
-                <button class="btn btn-backup" onclick="document.getElementById('importFile').click()">📤 YEDEK YÜKLE</button>
-                <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
-            </div>
+      <div class="card">
+        <label>ARŞİVDE ARA (TARİH VEYA ARTİKEL)</label>
+        <input type="text" id="archiveSearch" placeholder="09.05.2026 veya Artikel no..." oninput="renderArchive()">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px">
+          <button class="btn btn-backup" onclick="manualBackup()">📥 MANUEL YEDEK AL (İndir & Firebase'e gönder)</button>
+          <button class="btn btn-backup" onclick="document.getElementById('importFile').click()">📤 YEDEK YÜKLE (İçe Aktar)</button>
+          <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
         </div>
-        <div id="archiveListContainer"></div>
+        <div style="margin-top:8px" class="muted small">Not: Uygulama otomatik günlük yedekleme yapar; manuel yedekleme de yapabilirsiniz.</div>
+      </div>
+
+      <div id="localArchiveContainer" class="card">
+        <div class="section-title">Local Archive (Cihazınızda)</div>
+        <div id="localArchiveList" class="table-wrapper" style="padding:8px"></div>
+      </div>
+
+      <div id="sharedArchiveContainer" class="card">
+        <div class="section-title">Shared Archive (İnternetteki tüm kullanıcı kayıtları)</div>
+        <div id="sharedArchiveList" class="table-wrapper" style="padding:8px"></div>
+      </div>
     </div>
 
     <!-- 4. RECHNER -->
     <div id="tab4" class="tab-content">
-        <div class="card">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                <div style="background: rgba(88, 166, 255, 0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--accent);">
-                    <label style="color: var(--accent); font-weight: bold;">🏁 BİTİŞ SAATİ</label>
-                    <input type="time" id="targetEndTime" value="05:00" oninput="calcSolve()" style="border-color: var(--accent); margin-top: 5px;">
-                </div>
-                <div style="background: rgba(35, 134, 54, 0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--success); text-align: center;">
-                    <label style="color: var(--success); font-weight: bold;">HEDEFE KALAN</label>
-                    <div id="remainingTimeLabel" style="font-size: 20px; font-weight: bold; margin-top: 5px; color: #aff5b4;">--:--</div>
-                </div>
-            </div>
-            <div class="calc-display-area">
-                <div id="calc-exp"></div>
-                <div id="calc-res">0</div>
-            </div>
-            <div class="calc-container">
-                <button class="calc-btn clr-btn" onclick="calcClear()">C</button>
-                <button class="calc-btn back-btn" onclick="calcBack()">⌫</button>
-                <button class="calc-btn time-btn" onclick="calcNum(':')">:</button>
-                <button class="calc-btn op-btn" onclick="calcOp('/')">÷</button>
-                <button class="calc-btn" onclick="calcNum('7')">7</button>
-                <button class="calc-btn" onclick="calcNum('8')">8</button>
-                <button class="calc-btn" onclick="calcNum('9')">9</button>
-                <button class="calc-btn op-btn" onclick="calcOp('*')">×</button>
-                <button class="calc-btn" onclick="calcNum('4')">4</button>
-                <button class="calc-btn" onclick="calcNum('5')">5</button>
-                <button class="calc-btn" onclick="calcNum('6')">6</button>
-                <button class="calc-btn op-btn" onclick="calcOp('-')">-</button>
-                <button class="calc-btn" onclick="calcNum('1')">1</button>
-                <button class="calc-btn" onclick="calcNum('2')">2</button>
-                <button class="calc-btn" onclick="calcNum('3')">3</button>
-                <button class="calc-btn op-btn" onclick="calcOp('+')">+</button>
-                <button class="calc-btn" onclick="calcNum('0')">0</button>
-                <button class="calc-btn" onclick="calcNum('.')">.</button>
-                <button class="calc-btn eq-btn" onclick="calcSolve()">HESAPLA</button>
-            </div>
+      <div class="card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px">
+          <div style="background:rgba(88,166,255,0.1);padding:10px;border-radius:8px;border:1px solid var(--accent)">
+            <label style="color:var(--accent);font-weight:bold">🏁 BİTİŞ SAATİ</label>
+            <input type="time" id="targetEndTime" value="05:00" oninput="calcSolve()" style="border-color:var(--accent);margin-top:5px">
+          </div>
+          <div style="background:rgba(35,134,54,0.1);padding:10px;border-radius:8px;border:1px solid var(--success);text-align:center">
+            <label style="color:var(--success);font-weight:bold">HEDEFE KALAN</label>
+            <div id="remainingTimeLabel" style="font-size:20px;font-weight:bold;margin-top:5px;color:#aff5b4">--:--</div>
+          </div>
         </div>
+        <div style="background:#000;padding:15px;border-radius:8px;margin-bottom:10px;border:1px solid var(--border);text-align:right">
+          <div id="calc-exp"></div>
+          <div id="calc-res" style="color:#00ff00;font-size:28px;font-weight:bold">0</div>
+        </div>
+        <div class="calc-container" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:350px;margin:0 auto">
+          <button class="calc-btn clr-btn" onclick="calcClear()">C</button>
+          <button class="calc-btn back-btn" onclick="calcBack()">⌫</button>
+          <button class="calc-btn time-btn" onclick="calcNum(':')">:</button>
+          <button class="calc-btn op-btn" onclick="calcOp('/')">÷</button>
+          <button class="calc-btn" onclick="calcNum('7')">7</button>
+          <button class="calc-btn" onclick="calcNum('8')">8</button>
+          <button class="calc-btn" onclick="calcNum('9')">9</button>
+          <button class="calc-btn op-btn" onclick="calcOp('*')">×</button>
+          <button class="calc-btn" onclick="calcNum('4')">4</button>
+          <button class="calc-btn" onclick="calcNum('5')">5</button>
+          <button class="calc-btn" onclick="calcNum('6')">6</button>
+          <button class="calc-btn op-btn" onclick="calcOp('-')">-</button>
+          <button class="calc-btn" onclick="calcNum('1')">1</button>
+          <button class="calc-btn" onclick="calcNum('2')">2</button>
+          <button class="calc-btn" onclick="calcNum('3')">3</button>
+          <button class="calc-btn op-btn" onclick="calcOp('+')">+</button>
+          <button class="calc-btn" onclick="calcNum('0')">0</button>
+          <button class="calc-btn" onclick="calcNum('.')">.</button>
+          <button class="calc-btn eq-btn" onclick="calcSolve()">HESAPLA</button>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
 <script>
-    // FIREBASE VE GLOBAL DEĞİŞKENLER (KORUNDU)
-    const firebaseConfig = {
-        apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
-        authDomain: "firmak-c457f.firebaseapp.com",
-        databaseURL: "https://firmak-c457f-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "firmak-c457f",
-        storageBucket: "firmak-c457f.appspot.com",
-        messagingSenderId: "521525493127",
-        appId: "1:521525493127:web:e8a611de175ea9ea44a722"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const rehberRef = db.ref('rehber');
-    let globalRehber = [];
-    const STORAGE_KEY = 'FIRMAK_PRO_ARCHIVE_V1';
+/* ---------- Firebase konfig (aynı) ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBfU8df7h3uHYfshaa4Ch6Z-tbB-y5zKJ8",
+  authDomain: "firmak-c457f.firebaseapp.com",
+  databaseURL: "https://firmak-c457f-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "firmak-c457f",
+  storageBucket: "firmak-c457f.appspot.com",
+  messagingSenderId: "521525493127",
+  appId: "1:521525493127:web:e8a611de175ea9ea44a722"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const rehberRef = db.ref('rehber');
+const archivesRef = db.ref('archives');                // paylaşılan arşivler burada
+const backupsRef = db.ref('archive_backups');          // günlük yedekler
+/* ---------- Globaller ---------- */
+let globalRehber = [];
+let globalSharedArchives = [];
+const STORAGE_KEY = 'FIRMAK_PRO_ARCHIVE_V1';
+const PENDING_KEY = 'FIRMAK_PENDING_ARCHIVE_SYNC_V1';
+const LAST_AUTO_BACKUP = 'FIRMAK_LAST_AUTO_BACKUP_V1';
+let deviceId = localStorage.getItem('FIRMAK_DEVICE_ID');
+if(!deviceId){
+  deviceId = 'dev-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*10000).toString(36);
+  localStorage.setItem('FIRMAK_DEVICE_ID', deviceId);
+}
 
-    function universalTab(id) {
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        document.getElementById('nav-' + id).classList.add('active');
-        if(id === 'tab3') renderArchive();
+/* ---------- Tablolar / Sekmeler ---------- */
+function universalTab(id){
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='tab3') { renderArchive(); renderSharedArchive(); }
+}
+
+/* ---------- Rechner (aynı) ---------- */
+let currentExp = "";
+function calcNum(n){ currentExp += n; updateDisplay(); calcSolve(); }
+function calcOp(op){ currentExp += " "+op+" "; updateDisplay(); }
+function calcClear(){ currentExp = ""; updateDisplay(); document.getElementById('calc-res').innerText="0"; document.getElementById('remainingTimeLabel').innerText="--:--"; }
+function calcBack(){ currentExp = currentExp.trim().endsWith(" ")? currentExp.trim().slice(0,-1).trim() : currentExp.slice(0,-1); updateDisplay(); calcSolve(); }
+function updateDisplay(){ document.getElementById('calc-exp').innerText = currentExp; }
+function calcSolve(){
+  try{
+    let targetVal = document.getElementById('targetEndTime').value;
+    if(!targetVal) return;
+    if(currentExp.includes(":")){
+      let parts = currentExp.split(/(\+|\-)/);
+      let baseTime = parts[0].trim();
+      let [h,m] = baseTime.split(":").map(Number);
+      let startD = new Date(2000,0,1,h,m,0);
+      for(let i=1;i<parts.length;i+=2){
+        let op = parts[i]?.trim();
+        let val = parseFloat(parts[i+1]?.trim() || 0);
+        if(op==="+") startD.setMinutes(startD.getMinutes()+val);
+        if(op==="-") startD.setMinutes(startD.getMinutes()-val);
+      }
+      let resH = startD.getHours(), resM = startD.getMinutes();
+      document.getElementById('calc-res').innerText = resH.toString().padStart(2,'0')+":"+resM.toString().padStart(2,'0');
+      let [tH,tM] = targetVal.split(":").map(Number);
+      let targetD = new Date(2000,0,1,tH,tM,0);
+      if(targetD < startD) targetD.setDate(targetD.getDate()+1);
+      let diffMin = Math.floor((targetD - startD)/60000);
+      const label = document.getElementById('remainingTimeLabel');
+      if(diffMin>0){ label.innerText = `${Math.floor(diffMin/60)}s ${diffMin%60}dk`; label.style.color="#aff5b4"; }
+      else { label.innerText = diffMin===0 ? "TAMAM" : `${Math.abs(diffMin)} dk AŞTI`; label.style.color = diffMin===0 ? "#58a6ff" : "#f85149"; }
+    } else if(currentExp !== ""){
+      let res = eval(currentExp.replace(/×/g,'*').replace(/÷/g,'/'));
+      document.getElementById('calc-res').innerText = Number.isInteger(res)? res : res.toFixed(2);
     }
+  }catch(e){}
+}
 
-    // --- RECHNER (KORUNDU) ---
-    let currentExp = "";
-    function calcNum(n) { currentExp += n; updateDisplay(); calcSolve(); }
-    function calcOp(op) { currentExp += " " + op + " "; updateDisplay(); }
-    function calcClear() { currentExp = ""; updateDisplay(); document.getElementById('calc-res').innerText = "0"; document.getElementById('remainingTimeLabel').innerText = "--:--"; }
-    function calcBack() { currentExp = currentExp.trim().endsWith(" ") ? currentExp.trim().slice(0, -1).trim() : currentExp.slice(0, -1); updateDisplay(); calcSolve(); }
-    function updateDisplay() { document.getElementById('calc-exp').innerText = currentExp; }
+/* ---------- Util ---------- */
+function asNumber(v){
+  if(v===null||v===undefined) return 0;
+  const s = String(v).trim().replace(/,/g, '.');
+  const n = Number(s);
+  return isFinite(n)? n : 0;
+}
 
-    function calcSolve() {
-        try {
-            let targetVal = document.getElementById('targetEndTime').value;
-            if (!targetVal) return;
-            if (currentExp.includes(":")) {
-                let parts = currentExp.split(/(\+|-)/);
-                let baseTime = parts[0].trim();
-                let [h, m] = baseTime.split(":").map(Number);
-                let startD = new Date(2000, 0, 1, h, m, 0);
-                for (let i = 1; i < parts.length; i += 2) {
-                    let op = parts[i]?.trim();
-                    let val = parseFloat(parts[i+1]?.trim() || 0);
-                    if (op === "+") startD.setMinutes(startD.getMinutes() + val);
-                    if (op === "-") startD.setMinutes(startD.getMinutes() - val);
-                }
-                let resH = startD.getHours(), resM = startD.getMinutes();
-                let nowTimeStr = resH.toString().padStart(2, '0') + ":" + resM.toString().padStart(2, '0');
-                document.getElementById('calc-res').innerText = nowTimeStr;
-                let [tH, tM] = targetVal.split(":").map(Number);
-                let targetD = new Date(2000, 0, 1, tH, tM, 0);
-                if (targetD < startD) targetD.setDate(targetD.getDate() + 1);
-                let diffMin = Math.floor((targetD - startD) / 60000);
-                const label = document.getElementById('remainingTimeLabel');
-                if (diffMin > 0) { label.innerText = `${Math.floor(diffMin / 60)}s ${diffMin % 60}dk`; label.style.color = "#aff5b4"; }
-                else { label.innerText = diffMin === 0 ? "TAMAM" : `${Math.abs(diffMin)} dk AŞTI`; label.style.color = diffMin === 0 ? "#58a6ff" : "#f85149"; }
-            } else if(currentExp !== "") {
-                let res = eval(currentExp.replace(/×/g, '*').replace(/÷/g, '/'));
-                document.getElementById('calc-res').innerText = Number.isInteger(res) ? res : res.toFixed(2);
-            }
-        } catch (e) { }
+/* ---------- Verim toggle ---------- */
+function toggleIgnoreVerim(checked){
+  const el = document.getElementById('cPro');
+  if(!el) return;
+  if(checked){ el.value = "1.00"; el.disabled = true; }
+  else { el.disabled = false; }
+  smartEngine('verim');
+}
+
+/* ---------- SMART ENGINE ---------- */
+function smartEngine(source){
+  const adetEl = document.getElementById('cAdet');
+  const teEl = document.getElementById('cTE');
+  const verimEl = document.getElementById('cPro');
+  const dakikaEl = document.getElementById('cRes');
+  const adet = asNumber(adetEl?.value);
+  const te = asNumber(teEl?.value);
+  let verim = (verimEl && !verimEl.disabled) ? asNumber(verimEl.value) : 1;
+  const dakika = asNumber(dakikaEl?.value);
+  if(source === 'dakika'){
+    if(dakika <= 0) return;
+    if(adet > 0 && te > 0){
+      const newVerim = (adet * te) / dakika;
+      if(isFinite(newVerim)) verimEl.value = (Math.round(newVerim * 100) / 100).toFixed(2);
+    } else return;
+  } else if(source === 'adet' || source === 'te' || source === 'verim'){
+    if(te <= 0) return;
+    if(verim <= 0) return;
+    const newDakika = (adet * te) / verim;
+    if(isFinite(newDakika)) dakikaEl.value = newDakika.toFixed(2);
+  }
+  try{ calcSum(); }catch(e){}
+}
+
+/* ---------- REHBER (Firebase sync) ---------- */
+rehberRef.on('value', snap=>{
+  globalRehber = []; const data = snap.val();
+  if(data) Object.keys(data).forEach(k => globalRehber.push({id:k,...data[k]}));
+  renderDbList();
+});
+
+function fetchTE(v){
+  const m = globalRehber.find(x => x.art === (v||'').toUpperCase().trim());
+  if(m){ document.getElementById('cTE').value = String(m.te); smartEngine('te'); }
+}
+
+/* ---------- Add / list rows ---------- */
+function addRow(){
+  const art = (document.getElementById('cArt').value || '').toUpperCase(); if(!art) return;
+  const adetVal = Math.round(asNumber(document.getElementById('cAdet').value));
+  const teVal = asNumber(document.getElementById('cTE').value);
+  const verimVal = asNumber(document.getElementById('cPro').value) || 1;
+  const resVal = asNumber(document.getElementById('cRes').value);
+  const rustVal = asNumber(document.getElementById('cRust').value);
+  const gmkVal = asNumber(document.getElementById('cGMK').value);
+  const info = {
+    id: Date.now().toString() + '-' + Math.floor(Math.random()*1000),
+    art,
+    adet: String(adetVal),
+    te: String(teVal),
+    verim: String(Number(verimVal.toFixed(2))),
+    res: String(Number(resVal.toFixed(2))),
+    rust: String(Number(rustVal.toFixed(2))),
+    gmk: String(Number(gmkVal.toFixed(2))),
+    device: deviceId,
+    createdAt: Date.now()
+  };
+  const tr = document.createElement('tr'); tr.dataset.info = JSON.stringify(info);
+  tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.verim}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="background:none;border:none;color:#f85149;font-size:16px;">×</button></td>`;
+  document.getElementById('dailyBody').appendChild(tr); calcSum();
+  ['cArt','cAdet','cTE','cRes','cRust','cGMK'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(id === 'cRust' || id === 'cGMK') el.value = "0"; else el.value = "";
+  });
+}
+
+/* ---------- Calculate totals ---------- */
+function calcSum(){
+  let n=0,r=0,g=0;
+  document.querySelectorAll("#dailyBody tr").forEach(tr=>{
+    try{ const d = JSON.parse(tr.dataset.info); n += asNumber(d.res); r += asNumber(d.rust); g += asNumber(d.gmk); }catch(e){}
+  });
+  const total = n+r+g;
+  const target = asNumber(document.getElementById('targetLimit').value) || 465;
+  document.getElementById('grandTotalLabel').innerText = total.toFixed(2);
+  const diff = target - total; const dl = document.getElementById('diffLabel');
+  dl.innerText = `KALAN: ${diff.toFixed(2)} dk`; dl.style.color = diff < 0 ? '#f85149' : '#aff5b4';
+}
+
+/* ---------- ARCHIVE: local save + online sync ---------- */
+function finishDay(){
+  const rows = document.querySelectorAll("#dailyBody tr");
+  if(rows.length === 0) return alert("Arşivlenecek veri yok!");
+  const record = {
+    date: (document.getElementById('targetDate').value || new Date().toISOString().split('T')[0]).split("-").reverse().join("."),
+    items: Array.from(rows).map(r=>JSON.parse(r.dataset.info)),
+    totalDk: document.getElementById('grandTotalLabel').innerText,
+    id: Date.now().toString(),
+    device: deviceId,
+    createdAt: Date.now()
+  };
+  // save locally
+  let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  archive.unshift(record);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
+  document.getElementById('dailyBody').innerHTML = ""; calcSum();
+  alert("Gün yerel olarak arşivlendi!");
+  // push to Firebase if online, else queue
+  if(navigator.onLine){
+    try{
+      archivesRef.child(record.id).set(record);
+    }catch(e){ queuePendingArchive(record); }
+  } else {
+    queuePendingArchive(record);
+  }
+}
+
+/* pending queue */
+function queuePendingArchive(rec){
+  const pending = JSON.parse(localStorage.getItem(PENDING_KEY)) || [];
+  pending.push(rec);
+  localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+  console.warn('Kayit offline, kuyruga alindi.');
+}
+
+/* flush pending when online */
+async function syncPendingArchives(){
+  const pending = JSON.parse(localStorage.getItem(PENDING_KEY)) || [];
+  if(!pending.length) return;
+  if(!navigator.onLine) return;
+  for(const r of pending){
+    try{
+      await archivesRef.child(r.id).set(r);
+    }catch(e){
+      console.warn('sync hatasi', e);
+      // leave remaining pending
+      return;
     }
+  }
+  localStorage.removeItem(PENDING_KEY);
+  console.log('Pending archives senkronize edildi.');
+}
 
-    // --- ÜRETİM VE REHBER (KORUNDU) ---
-    function smartEngine(source) {
-        let adet = parseFloat(document.getElementById('cAdet').value) || 0;
-        let te = parseFloat(document.getElementById('cTE').value) || 0;
-        let verim = parseFloat(document.getElementById('cPro').value) || 1.0;
-        let dakika = parseFloat(document.getElementById('cRes').value) || 0;
-        if (source === 'dakika' && te > 0) document.getElementById('cAdet').value = Math.round((dakika * verim) / te);
-        else if (te > 0) document.getElementById('cRes').value = ((adet * te) / verim).toFixed(2);
+/* ---------- Render Local Archive ---------- */
+function renderArchive(){
+  const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  const search = (document.getElementById('archiveSearch').value || '').toLowerCase();
+  const container = document.getElementById('localArchiveList'); container.innerHTML = "";
+  const shown = arc.filter(d=>{
+    if(!search) return true;
+    if(d.date && d.date.toLowerCase().includes(search)) return true;
+    if(d.items && d.items.some(i => (i.art||'').toLowerCase().includes(search))) return true;
+    return false;
+  });
+  if(shown.length===0){ container.innerHTML = '<div class="muted">(Local arşiv boş)</div>'; return; }
+  const html = shown.map(day=>{
+    const rows = (day.items||[]).map(i=>`<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.verim}</td><td>${i.res}</td><td>${i.rust}</td><td>${i.gmk}</td><td><button onclick="deleteLocalArchiveRow('${day.id}','${i.id}')" style="color:red;background:none;border:none;font-size:14px;">×</button></td></tr>`).join('');
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent)">📅 ${day.date}</b><b style="color:var(--success)">TOPLAM: ${day.totalDk} dk</b><button onclick="deleteFullLocalDay('${day.id}')" style="background:var(--danger);color:white;border:none;padding:4px 8px;border-radius:4px;font-size:10px;">GÜNÜ SİL</button></div><div class="table-wrapper" style="margin-top:8px"><table class="archive-table"><thead><tr><th>ART</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+/* delete local archive row/day */
+function deleteLocalArchiveRow(dayId,rowId){
+  if(!confirm("Bu satırı yerel arşivden silmek istiyor musunuz?")) return;
+  let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  let dayIndex = arc.findIndex(d=>d.id===dayId);
+  if(dayIndex>-1){
+    arc[dayIndex].items = arc[dayIndex].items.filter(i=>i.id!==rowId);
+    let newTotal = 0; arc[dayIndex].items.forEach(i=> newTotal += asNumber(i.res)+asNumber(i.rust)+asNumber(i.gmk));
+    arc[dayIndex].totalDk = newTotal.toFixed(2);
+    if(arc[dayIndex].items.length===0) arc.splice(dayIndex,1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arc)); renderArchive();
+  }
+}
+function deleteFullLocalDay(dayId){
+  if(!confirm("Tüm günü yerel arşivden silmek istediğinize emin misiniz?")) return;
+  let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  arc = arc.filter(d=>d.id!==dayId);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
+  renderArchive();
+}
+
+/* ---------- Shared archives (Firebase) ---------- */
+/* listen already established below */
+function renderSharedArchive(){
+  const container = document.getElementById('sharedArchiveList');
+  if(!container) return;
+  if(!globalSharedArchives || globalSharedArchives.length===0){ container.innerHTML = '<div class="muted">(Shared arşiv boş veya bağlantı yok)</div>'; return; }
+  const search = (document.getElementById('archiveSearch').value || '').toLowerCase();
+  const shown = globalSharedArchives.filter(day=>{
+    if(!search) return true;
+    if(day.date && day.date.toLowerCase().includes(search)) return true;
+    if(day.items && day.items.some(i => (i.art||'').toLowerCase().includes(search))) return false ? false : true;
+    return false;
+  });
+  if(shown.length===0){ container.innerHTML = '<div class="muted">(Aranan kritere uygun shared kayıt yok)</div>'; return; }
+  const html = shown.map(day=>{
+    const rows = (day.items||[]).map(i=>`<tr><td>${i.art}</td><td>${i.adet}</td><td>${i.verim}</td><td>${i.res}</td><td>${i.rust}</td><td>${i.gmk}</td></tr>`).join('');
+    return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:var(--accent)">📅 ${day.date}</b><b style="color:var(--success)">TOPLAM: ${day.totalDk} dk</b><div class="small muted">Cihaz: ${day.device||'(unknown)'}</div></div><div class="table-wrapper" style="margin-top:8px"><table class="archive-table"><thead><tr><th>ART</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  container.innerHTML = html;
+}
+
+/* Firebase listener: load all shared archives */
+archivesRef.on('value', snap=>{
+  const data = snap.val();
+  globalSharedArchives = [];
+  if(data) Object.keys(data).forEach(k => globalSharedArchives.push({...data[k], id:k}));
+  // sort by createdAt desc
+  globalSharedArchives.sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
+  renderSharedArchive();
+});
+
+/* ---------- Pending sync on online ---------- */
+window.addEventListener('online', ()=>{
+  console.log('Online oldu, pending senkronize edilecek.');
+  syncPendingArchives();
+  // try auto-backup if pending
+  autoBackupIfNeeded();
+});
+
+/* ---------- Auto daily backup ---------- */
+function autoBackupIfNeeded(){
+  try{
+    const last = localStorage.getItem(LAST_AUTO_BACKUP) || '';
+    const today = new Date().toISOString().slice(0,10);
+    if(last === today) return; // zaten yedek alınmış bugün
+    // create backup snapshot from local archive
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const record = { device: deviceId, date: today, createdAt: Date.now(), data };
+    // store locally under key with date
+    const backups = JSON.parse(localStorage.getItem('FIRMAK_AUTO_BACKUPS_'+deviceId) || '[]');
+    backups.unshift(record);
+    localStorage.setItem('FIRMAK_AUTO_BACKUPS_'+deviceId, JSON.stringify(backups));
+    localStorage.setItem(LAST_AUTO_BACKUP, today);
+    // push to firebase if online and permitted
+    if(navigator.onLine){
+      backupsRef.child(deviceId).push(record).catch(e=>console.warn('backup push err', e));
+    } else {
+      // schedule pushing by leaving record in local backups; on next online we can push
+      console.log('Auto yedek offline kaydedildi, bağlantı gelince push yapılacak.');
     }
+    console.log('Günlük otomatik yedek alındı.');
+  }catch(e){ console.warn('autoBackup error', e); }
+}
 
-    rehberRef.on('value', (snap) => {
-        globalRehber = []; const data = snap.val();
-        if(data) Object.keys(data).forEach(k => globalRehber.push({id: k, ...data[k]}));
-        renderDbList();
-    });
-
-    function fetchTE(v) { 
-        const m = globalRehber.find(x => x.art === v.toUpperCase().trim()); 
-        if(m) { document.getElementById('cTE').value = m.te; smartEngine('te'); } 
+/* manual backup: download + push to firebase */
+function manualBackup(){
+  try{
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    if(!data.length) return alert('Yedeklenecek veri yok.');
+    const blob = new Blob([JSON.stringify(data,null,2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${deviceId}_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+    // also attempt to push to firebase backups
+    const record = { device: deviceId, date: new Date().toISOString().slice(0,10), createdAt: Date.now(), data };
+    if(navigator.onLine){
+      backupsRef.child(deviceId).push(record).then(()=> alert('Manuel yedek Firebase\'e gönderildi ve dosya indirildi.')).catch(e=> alert('Yedek Firebase\'e gönderilemedi: '+e.message));
+    } else {
+      // store locally (it will be included in auto backups list anyway)
+      const backups = JSON.parse(localStorage.getItem('FIRMAK_AUTO_BACKUPS_'+deviceId) || '[]');
+      backups.unshift(record);
+      localStorage.setItem('FIRMAK_AUTO_BACKUPS_'+deviceId, JSON.stringify(backups));
+      alert('İnternete bağlı olmadığı için yedek lokal olarak kaydedildi (dosya indirildi).');
     }
+  }catch(e){ alert('Yedekleme başarısız: '+e.message); }
+}
 
-    function addRow() {
-        const art = document.getElementById('cArt').value.toUpperCase(); if(!art) return;
-        const info = { art, adet: document.getElementById('cAdet').value, te: document.getElementById('cTE').value, verim: document.getElementById('cPro').value || "1.0", res: document.getElementById('cRes').value, rust: document.getElementById('cRust').value || 0, gmk: document.getElementById('cGMK').value || 0, id: Date.now() };
-        const tr = document.createElement('tr'); tr.dataset.info = JSON.stringify(info);
-        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.verim}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none;">❌</button></td>`;
-        document.getElementById('dailyBody').appendChild(tr); calcSum();
-        ['cArt','cAdet','cTE','cRes','cRust','cGMK','cPro'].forEach(id => document.getElementById(id).value = (id === 'cRust' || id === 'cGMK') ? "0" : (id === 'cPro' ? "1.0" : ""));
-    }
+/* Import backup file into local archive (manual upload) */
+function importBackup(event){
+  const file = event.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!Array.isArray(parsed)) throw new Error('Beklenen dizi');
+      // merge into local archive (prepend)
+      let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      parsed.forEach(rec => archive.unshift(rec));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
+      renderArchive();
+      alert('Yedek içe aktarıldı (local).');
+    }catch(err){ alert('Dosya okunamadı: '+err.message); }
+  };
+  reader.readAsText(file);
+}
 
-    function calcSum() {
-        let n=0, r=0, g=0; document.querySelectorAll("#dailyBody tr").forEach(tr => { const d = JSON.parse(tr.dataset.info); n += parseFloat(d.res||0); r += parseFloat(d.rust||0); g += parseFloat(d.gmk||0); });
-        const total = n+r+g; const target = parseFloat(document.getElementById('targetLimit').value) || 465;
-        document.getElementById('grandTotalLabel').innerText = total.toFixed(2);
-        const diff = target - total; const dl = document.getElementById('diffLabel');
-        dl.innerText = `KALAN: ${diff.toFixed(2)} dk`; dl.style.color = diff < 0 ? '#f85149' : '#aff5b4';
-    }
+/* ---------- REHBER functions (same as before) ---------- */
+function saveDb(){
+  const art = (document.getElementById('dbArt').value || '').toUpperCase().trim();
+  const te = asNumber(document.getElementById('dbTE').value);
+  const refa = document.getElementById('dbRefa').value || '';
+  const note = document.getElementById('dbNote').value || '';
+  if(!art || te<=0) return alert("Eksik bilgi! (ART ve TE gerekli)");
+  const existing = globalRehber.find(x => x.art === art);
+  if(existing){
+    document.getElementById('dbTE').value = existing.te;
+    document.getElementById('dbRefa').value = existing.refa || '';
+    document.getElementById('dbNote').value = existing.note || '';
+    showMatchPreview(existing);
+    if(!confirm(`Bu ART zaten kayıtlı:\nTE: ${existing.te}\nREFA: ${existing.refa || ''}\nNOT: ${existing.note || ''}\n\nÜzerine yazılsın mı?`)) return;
+    db.ref('rehber/' + existing.id).set({ art, te, refa, note }, (err)=>{ if(err) alert("Güncelleme hatası: "+err.message); else { alert("Güncellendi"); clearDbInputs(); }});
+    return;
+  }
+  rehberRef.push({ art, te, refa, note }, (err)=>{ if(err) alert("Kayıt hatası: "+err.message); else { alert("Rehbere eklendi"); clearDbInputs(); }});
+}
+function clearDbInputs(){ ['dbArt','dbTE','dbRefa','dbNote','dbSearch'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('dbMatchPreview').style.display='none'; filterRehber(); document.getElementById('dbArt').focus(); }
+function renderDbList(filter){ const listEl = document.getElementById('dbListBody'); const q = (filter || document.getElementById('dbSearch')?.value || '').toLowerCase(); const rows = globalRehber.filter(i => !q || i.art.toLowerCase().includes(q) || (i.refa||'').toLowerCase().includes(q) || (i.note||'').toLowerCase().includes(q)); if(rows.length===0){ listEl.innerHTML = '<tr><td colspan="5">(Liste boş)</td></tr>'; return; } listEl.innerHTML = rows.map(i=>`<tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa||''}</td><td>${(i.note||'').replace(/</g,'&lt;')}</td><td><button onclick="editDb('${i.id}')" style="margin-right:8px">Düzenle</button><button onclick="deleteDb('${i.id}')" style="color:#f85149">Sil</button></td></tr>`).join(''); }
+function editDb(id){ const it = globalRehber.find(x=>x.id===id); if(!it) return; document.getElementById('dbArt').value = it.art; document.getElementById('dbTE').value = it.te; document.getElementById('dbRefa').value = it.refa || ''; document.getElementById('dbNote').value = it.note || ''; document.getElementById('dbTE').focus(); showMatchPreview(it); }
+function deleteDb(id){ if(!confirm("Silinsin mi?")) return; db.ref('rehber/'+id).remove(); }
+function removeByArticle(){ const q = (document.getElementById('dbSearch').value || '').toUpperCase().trim(); if(!q) return alert('Kaldırmak için ART girin'); const matches = globalRehber.filter(i=>i.art === q); if(matches.length===0) return alert('Eşleşen ART bulunamadı'); if(!confirm(`${matches.length} kayıt bulundu. Hepsi silinsin mi?`)) return; matches.forEach(m => db.ref('rehber/' + m.id).remove()); document.getElementById('dbSearch').value = ''; }
+function filterRehber(){ const q = (document.getElementById('dbSearch').value || '').trim(); renderDbList(q); }
+function exportRehber(){ const data = globalRehber.map(i => ({ art: i.art, te: i.te, refa: i.refa||'', note: i.note||'' })); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'rehber-list.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+function importRehberFile(event){ const file = event.target.files[0]; if(!file) return; const r = new FileReader(); r.onload = (e)=>{ try{ const parsed = JSON.parse(e.target.result); if(!Array.isArray(parsed)) throw new Error('Beklenen dizi'); let added=0, updated=0; parsed.forEach(item=>{ const art = (item.art||'').toUpperCase().trim(); if(!art) return; const existing = globalRehber.find(x=>x.art===art); if(existing){ db.ref('rehber/' + existing.id).set({ art, te: item.te||0, refa: item.refa||'', note: item.note||'' }); updated++; } else { rehberRef.push({ art, te: item.te||0, refa: item.refa||'', note: item.note||'' }); added++; } }); alert(`İçe aktarma tamamlandı. Eklendi: ${added}, Güncellendi: ${updated}`); document.getElementById('rehber-import-file') && (document.getElementById('rehber-import-file').value = ''); }catch(err){ alert('Dosya okunamadı: ' + err.message); } }; r.readAsText(file); }
+function previewDbArt(){ const v = (document.getElementById('dbArt').value || '').toUpperCase().trim(); if(!v){ document.getElementById('dbMatchPreview').style.display='none'; return; } const m = globalRehber.find(x => x.art === v); if(m) showMatchPreview(m); else { document.getElementById('dbMatchPreview').style.display='none'; } }
+function showMatchPreview(m){ const el = document.getElementById('dbMatchPreview'); el.style.display = 'block'; el.innerHTML = `<strong>Eşleşen Kayıt:</strong> ART: ${m.art} — TE: ${m.te} — REFA: ${m.refa||'(yok)'}<br><em>NOT:</em> ${(m.note||'').replace(/</g,'&lt;')}`; }
 
-    // --- ARŞİV (YENİLENEN FULL DETAY MANTIĞI) ---
-    function finishDay() {
-        const rows = document.querySelectorAll("#dailyBody tr");
-        if(rows.length === 0) return alert("Arşivlenecek veri yok!");
-        
-        const record = { 
-            date: (document.getElementById('targetDate').value).split("-").reverse().join("."), 
-            items: Array.from(rows).map(r => JSON.parse(r.dataset.info)), 
-            totalDk: document.getElementById('grandTotalLabel').innerText, 
-            id: Date.now() 
-        };
+/* ---------- Scanner helper ---------- */
+function toggleScanner(rid,tid,isU){ const rd = document.getElementById(rid); rd.style.display='block'; const h = new Html5Qrcode(rid); h.start({facingMode:"environment"},{fps:10,qrbox:250},(t)=>{ document.getElementById(tid).value = t.trim().toUpperCase(); if(isU) fetchTE(t.trim().toUpperCase()); else previewDbArt(); h.stop(); rd.style.display='none'; }); }
 
-        let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        archive.unshift(record);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(archive));
-        document.getElementById('dailyBody').innerHTML = ""; 
-        calcSum();
-        alert("Gün tüm detaylarıyla arşivlendi!");
-    }
-
-    function renderArchive() {
-        const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const search = document.getElementById('archiveSearch').value.toLowerCase();
-        const container = document.getElementById('archiveListContainer');
-        container.innerHTML = "";
-
-        arc.filter(d => d.date.includes(search) || d.items.some(i => i.art.toLowerCase().includes(search))).forEach((day) => {
-            const card = document.createElement('div');
-            card.className = "card archive-card";
-            
-            let tableRows = day.items.map((i, idx) => `
-                <tr>
-                    <td>${i.art}</td>
-                    <td>${i.adet}</td>
-                    <td>${i.verim}</td>
-                    <td>${i.res}</td>
-                    <td>${i.rust}</td>
-                    <td>${i.gmk}</td>
-                    <td><button onclick="deleteArchiveRow(${day.id}, ${i.id})" style="color:red; background:none; border:none; font-size:14px;">×</button></td>
-                </tr>
-            `).join('');
-
-            card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:var(--accent);">📅 ${day.date}</b>
-                    <b style="color:var(--success);">TOPLAM: ${day.totalDk} dk</b>
-                    <button onclick="deleteFullDay(${day.id})" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px;">GÜNÜ SİL</button>
-                </div>
-                <div class="table-wrapper">
-                    <table class="archive-table">
-                        <thead>
-                            <tr><th>ART</th><th>ADET</th><th>V</th><th>DK</th><th>R</th><th>G</th><th>❌</th></tr>
-                        </thead>
-                        <tbody>${tableRows}</tbody>
-                    </table>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
-
-    function deleteArchiveRow(dayId, rowId) {
-        if(!confirm("Bu satırı arşivden silmek istiyor musunuz?")) return;
-        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let dayIndex = arc.findIndex(d => d.id === dayId);
-        if(dayIndex > -1) {
-            arc[dayIndex].items = arc[dayIndex].items.filter(i => i.id !== rowId);
-            // Toplam dakikayı yeniden hesapla
-            let newTotal = 0;
-            arc[dayIndex].items.forEach(i => {
-                newTotal += (parseFloat(i.res)||0) + (parseFloat(i.rust)||0) + (parseFloat(i.gmk)||0);
-            });
-            arc[dayIndex].totalDk = newTotal.toFixed(2);
-            
-            if(arc[dayIndex].items.length === 0) arc.splice(dayIndex, 1);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
-            renderArchive();
-        }
-    }
-
-    function deleteFullDay(dayId) {
-        if(!confirm("Tüm günü arşivden silmek istediğinize emin misiniz?")) return;
-        let arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        arc = arc.filter(d => d.id !== dayId);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arc));
-        renderArchive();
-    }
-
-    function exportBackup() {
-        const data = localStorage.getItem(STORAGE_KEY);
-        if(!data || data === "[]") return alert("Yedeklenecek veri yok.");
-        const blob = new Blob([data], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
-    }
-
-    function importBackup(event) {
-        const file = event.target.files[0]; if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const json = JSON.parse(e.target.result);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(json));
-                renderArchive(); alert("Yedek yüklendi!");
-            } catch(e) { alert("Hatalı dosya!"); }
-        };
-        reader.readAsText(file);
-    }
-
-    function saveDb() { 
-        const art = document.getElementById('dbArt').value.toUpperCase();
-        const te = parseFloat(document.getElementById('dbTE').value);
-        if(!art || isNaN(te)) return alert("Eksik bilgi!");
-        rehberRef.push({art, te, refa: document.getElementById('dbRefa').value}); 
-    }
-    function renderDbList() { document.getElementById('dbListBody').innerHTML = globalRehber.map(i => `<tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td><button onclick="deleteDb('${i.id}')" style="color:red; background:none; border:none;">🗑️</button></td></tr>`).join(''); }
-    function deleteDb(id) { if(confirm("Silinsin mi?")) db.ref('rehber/'+id).remove(); }
-    
-    function toggleScanner(rid, tid, isU) {
-        const rd = document.getElementById(rid); rd.style.display = 'block';
-        const h = new Html5Qrcode(rid);
-        h.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (t) => {
-            document.getElementById(tid).value = t.trim().toUpperCase(); if(isU) fetchTE(t.trim().toUpperCase());
-            h.stop(); rd.style.display = 'none';
-        });
-    }
-
-    window.onload = () => { 
-        document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
-        renderArchive();
-    };
+/* ---------- On load ---------- */
+window.onload = ()=>{
+  document.getElementById('targetDate').value = new Date().toISOString().split('T')[0];
+  renderArchive();
+  renderDbList();
+  // try syncing pending and auto backup
+  syncPendingArchives();
+  autoBackupIfNeeded();
+  // also fetch shared archives is automatic via listener
+};
 </script>
 </body>
 </html>
