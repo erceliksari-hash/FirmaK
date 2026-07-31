@@ -17,8 +17,8 @@
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 1200px; }
         
-        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; position: sticky; top: 0; background: var(--bg); z-index: 100; }
-        .tab-btn { padding: 12px 15px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 5px; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+        .tab-btn { padding: 12px 15px; background: var(--input); color: #8b949e; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; }
         .tab-btn.active { background: var(--accent) !important; color: white !important; }
         
         .tab-content { display: none; width: 100%; }
@@ -92,7 +92,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                 <div><label>TOPLAM DK</label><div id="grandTotalLabel" style="font-size: 18px; font-weight: bold; color: var(--accent);">0.00</div></div>
                 <div><label>HEDEF DK</label><input type="number" id="targetLimit" value="465" oninput="calcSum()" style="height:35px;"></div>
-                <div style="grid-column: span 2; text-align: center; border-top: 1px solid var(--border); padding-top: 8px;"><span id="diffLabel" style="font-weight: bold; color:#aff5b4;">KALAN: 465.00 dk</span></div>
+                <div style="grid-column: span 2; text-align: center; border-top: 1px solid var(--border); padding-top: 8px;"><span id="diffLabel" style="font-weight: bold; color:#aff5b4;">KALAN: 0.00 dk</span></div>
             </div>
             <button class="btn btn-finish" onclick="finishDay()">GÜNÜ BİTİR VE ARŞİVLE</button>
         </div>
@@ -207,7 +207,7 @@
             let targetVal = document.getElementById('targetEndTime').value;
             if (!targetVal) return;
             if (currentExp.includes(":")) {
-                let parts = currentExp.split(/(\+|-)/);
+                let parts = currentExp.split(/(\+|\-)/);
                 let baseTime = parts[0].trim();
                 let [h, m] = baseTime.split(":").map(Number);
                 let startD = new Date(2000, 0, 1, h, m, 0);
@@ -257,16 +257,39 @@
 
     function addRow() {
         const art = document.getElementById('cArt').value.toUpperCase(); if(!art) return;
-        const info = { art, adet: document.getElementById('cAdet').value, te: document.getElementById('cTE').value, verim: document.getElementById('cPro').value || "1.0", res: document.getElementById('cRes').value, rust: document.getElementById('cRust').value || 0, gmk: document.getElementById('cGMK').value || 0, id: Date.now() };
+        const info = { 
+            id: Date.now().toString() + '-' + Math.floor(Math.random()*1000),
+            art,
+            adet: document.getElementById('cAdet').value || "0",
+            te: document.getElementById('cTE').value || "0",
+            verim: document.getElementById('cPro').value || "1.0",
+            res: document.getElementById('cRes').value || "0",
+            rust: document.getElementById('cRust').value || "0",
+            gmk: document.getElementById('cGMK').value || "0"
+        };
         const tr = document.createElement('tr'); tr.dataset.info = JSON.stringify(info);
-        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.verim}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="color:red; background:none; border:none;">❌</button></td>`;
+        tr.innerHTML = `<td>${info.art}</td><td>${info.adet}</td><td>${info.verim}</td><td>${info.res}</td><td>${info.rust}</td><td>${info.gmk}</td><td><button onclick="this.closest('tr').remove(); calcSum();" style="background:none;border:none;color:#f85149;font-size:16px;">×</button></td>`;
         document.getElementById('dailyBody').appendChild(tr); calcSum();
-        ['cArt','cAdet','cTE','cRes','cRust','cGMK','cPro'].forEach(id => document.getElementById(id).value = (id === 'cRust' || id === 'cGMK') ? "0" : (id === 'cPro' ? "1.0" : ""));
+        ['cArt','cAdet','cTE','cRes','cRust','cGMK'].forEach(id => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            if (id === 'cRust' || id === 'cGMK') el.value = "0";
+            else el.value = "";
+        });
     }
 
     function calcSum() {
-        let n=0, r=0, g=0; document.querySelectorAll("#dailyBody tr").forEach(tr => { const d = JSON.parse(tr.dataset.info); n += parseFloat(d.res||0); r += parseFloat(d.rust||0); g += parseFloat(d.gmk||0); });
-        const total = n+r+g; const target = parseFloat(document.getElementById('targetLimit').value) || 465;
+        let n=0, r=0, g=0;
+        document.querySelectorAll("#dailyBody tr").forEach(tr => {
+            try {
+                const d = JSON.parse(tr.dataset.info);
+                n += parseFloat(d.res || 0);
+                r += parseFloat(d.rust || 0);
+                g += parseFloat(d.gmk || 0);
+            } catch(e) { }
+        });
+        const total = n + r + g;
+        const target = parseFloat(document.getElementById('targetLimit').value) || 465;
         document.getElementById('grandTotalLabel').innerText = total.toFixed(2);
         const diff = target - total; const dl = document.getElementById('diffLabel');
         dl.innerText = `KALAN: ${diff.toFixed(2)} dk`; dl.style.color = diff < 0 ? '#f85149' : '#aff5b4';
@@ -281,7 +304,7 @@
             date: (document.getElementById('targetDate').value).split("-").reverse().join("."), 
             items: Array.from(rows).map(r => JSON.parse(r.dataset.info)), 
             totalDk: document.getElementById('grandTotalLabel').innerText, 
-            id: Date.now() 
+            id: Date.now()
         };
 
         let archive = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -294,15 +317,20 @@
 
     function renderArchive() {
         const arc = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const search = document.getElementById('archiveSearch').value.toLowerCase();
+        const search = (document.getElementById('archiveSearch').value || '').toLowerCase();
         const container = document.getElementById('archiveListContainer');
         container.innerHTML = "";
 
-        arc.filter(d => d.date.includes(search) || d.items.some(i => i.art.toLowerCase().includes(search))).forEach((day) => {
+        arc.filter(d => {
+            if(!search) return true;
+            if(d.date && d.date.toLowerCase().includes(search)) return true;
+            if(d.items && d.items.some(i => (i.art||'').toLowerCase().includes(search))) return true;
+            return false;
+        }).forEach((day) => {
             const card = document.createElement('div');
             card.className = "card archive-card";
             
-            let tableRows = day.items.map((i, idx) => `
+            let tableRows = (day.items || []).map((i, idx) => `
                 <tr>
                     <td>${i.art}</td>
                     <td>${i.adet}</td>
@@ -310,7 +338,7 @@
                     <td>${i.res}</td>
                     <td>${i.rust}</td>
                     <td>${i.gmk}</td>
-                    <td><button onclick="deleteArchiveRow(${day.id}, ${i.id})" style="color:red; background:none; border:none; font-size:14px;">×</button></td>
+                    <td><button onclick="deleteArchiveRow(${day.id}, '${i.id}')" style="color:red; background:none; border:none; font-size:14px;">×</button></td>
                 </tr>
             `).join('');
 
@@ -365,7 +393,7 @@
         if(!data || data === "[]") return alert("Yedeklenecek veri yok.");
         const blob = new Blob([data], {type: "application/json"});
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toLocaleDateString()}.json`; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = `Takip_Yedek_${new Date().toISOString().slice(0,10)}.json`; a.click();
     }
 
     function importBackup(event) {
@@ -387,7 +415,9 @@
         if(!art || isNaN(te)) return alert("Eksik bilgi!");
         rehberRef.push({art, te, refa: document.getElementById('dbRefa').value}); 
     }
-    function renderDbList() { document.getElementById('dbListBody').innerHTML = globalRehber.map(i => `<tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa}</td><td><button onclick="deleteDb('${i.id}')" style="color:red; background:none; border:none;">🗑️</button></td></tr>`).join(''); }
+    function renderDbList() { 
+        document.getElementById('dbListBody').innerHTML = globalRehber.map(i => `<tr><td>${i.art}</td><td>${i.te}</td><td>${i.refa || ''}</td><td><button onclick="deleteDb('${i.id}')" style="background:none;border:none;color:#f85149;">Sil</button></td></tr>`).join('');
+    }
     function deleteDb(id) { if(confirm("Silinsin mi?")) db.ref('rehber/'+id).remove(); }
     
     function toggleScanner(rid, tid, isU) {
